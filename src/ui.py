@@ -284,24 +284,20 @@ def format_response(answer):
     #           SENTIMENT
     # =================================
     # Displays sentiment analysis results
-
     elif answer["type"] == "sentiment":
 
         data = answer["data"]
 
-        if isinstance(data, dict):
+        return f"""
+    ### Sentiment Analysis
 
-            return f"""
-### Sentiment
+    **Item ID:** {data['Item ID']}
 
-**Item ID:** {data['Item ID']}
+    **Sentiment:** {data['Sentiment']}
 
-**Sentiment:** {data['Sentiment']}
-"""
-
-        else:
-            return f"Sentiment: {data}"
-
+    **Explanation:**
+    {data['Explanation']}
+    """
 
     # =================================
     #              ERROR

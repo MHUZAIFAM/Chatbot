@@ -67,17 +67,21 @@ class NewsChatbot:
     # =====================================================
     def extract_item_id(self, question):
 
-        if not self.id_col:
+        import re
+
+        # find any number that looks like an item id
+        match = re.search(r"\b\d{8,}\b", question)
+
+        if not match:
             return None
 
-        q = question.lower()
+        possible_id = match.group()
 
-        for item in self.df[self.id_col].astype(str):
+        # check if it exists in dataset
+        if possible_id in self.df[self.id_col].astype(str).values:
+            return possible_id
 
-            if item.lower() in q:
-                return item
-
-        return None
+        return "INVALID_ITEM"
 
     # =====================================================
     # SECTION DETECTION FROM QUESTION
@@ -100,6 +104,27 @@ class NewsChatbot:
             return "unselected"
 
         return None
+
+    # =====================================================
+    # CHECK IF SECTION EXISTS IN QUESTION
+    # =====================================================
+
+    def section_exists(self, question):
+
+        q = question.lower()
+
+        words = q.split()
+
+        for word in words:
+
+            for section in self.sections:
+
+                readable = section.replace("_", " ")
+
+                if word in readable:
+                    return True
+
+        return False
 
     def get_item_row(self, item_id):
 
@@ -173,6 +198,12 @@ class NewsChatbot:
         print("\nQUESTION:", question)
 
         item_id = self.extract_item_id(question)
+        # Invalid item ID check
+        if item_id == "INVALID_ITEM":
+            return {
+                "type": "error",
+                "data": "Item ID does not exist in dataset."
+            }
 
         # memory context resolution
         q = question.lower()
@@ -252,6 +283,17 @@ class NewsChatbot:
                     "Reason": reason
                 }
             }
+        # =====================================================
+        # SENTIMENT
+        # =====================================================
+        if item_id and any(x in q for x in ["sentiment", "opinion", "tone", "feeling"]):
+            return analyze_sentiment(
+                self.df,
+                self.model,
+                self.id_col,
+                self.text_col,
+                item_id
+            )
 
 
         # =====================================================
@@ -378,6 +420,11 @@ class NewsChatbot:
         if any(x in q for x in ["how many", "total", "count", "number of items"]):
 
             section = self.extract_section_from_question(question)
+            if section is None and "in" in q:
+                return {
+                    "type": "error",
+                    "data": "Section does not exist in dataset."
+                }
 
             # TOTAL ITEMS
             if not section:
@@ -441,22 +488,40 @@ class NewsChatbot:
                 "data": "Query not related to dataset."
             }
 
-        # =====================================================
-        # SENTIMENT
-        # =====================================================
-        if item_id and "sentiment" in q:
-            return analyze_sentiment(
-                self.df,
-                self.model,
-                self.id_col,
-                self.text_col,
-                item_id
-            )
 
         # =====================================================
         # RANKING
         # =====================================================
         if "ranking" in intents:
+
+            section = self.extract_section_from_question(question)
+
+            # If a specific section is asked
+            if section and section != "unselected":
+
+                answer_col = f"{section}_answer"
+
+                if answer_col in self.df.columns:
+
+                    section_df = self.df[
+                        self.df[answer_col].astype(str).str.lower() == "yes"
+                        ]
+
+                    if not section_df.empty:
+                        section_df = section_df.sort_values(self.rank_col)
+
+                        top_row = section_df.iloc[0]
+
+                        return {
+                            "type": "ranking",
+                            "data": [{
+                                "Section": section,
+                                "Item ID": str(top_row[self.id_col]),
+                                "Rank": int(top_row[self.rank_col])
+                            }]
+                        }
+
+            # Otherwise return ranking for all sections
             return handle_section_ranking(
                 self.df,
                 self.rank_col,

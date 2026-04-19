@@ -12,6 +12,7 @@ def analyze_sentiment(df, model, id_col, text_col, item_id):
 
     text = None
 
+    # Try to find usable text
     for col in ["Full Text", "Headline", text_col]:
 
         if col and col in df.columns:
@@ -28,7 +29,14 @@ def analyze_sentiment(df, model, id_col, text_col, item_id):
 
         prompt = f"""
 Analyze the sentiment of the following news text.
-Respond with ONLY one word: Positive, Negative, or Neutral.
+
+Classify it as:
+Positive, Negative, or Neutral.
+
+Respond ONLY in this format:
+
+Sentiment: Positive/Negative/Neutral
+Explanation: <one short sentence explaining why>
 
 Text:
 {text}
@@ -36,13 +44,28 @@ Text:
 
         response = model.generate_content(prompt)
 
-        sentiment = response.text.strip()
+        result = response.text.strip()
+
+        sentiment = "Unknown"
+        explanation = ""
+
+        # Parse Gemini response safely
+        for line in result.split("\n"):
+
+            line = line.strip()
+
+            if line.lower().startswith("sentiment"):
+                sentiment = line.split(":", 1)[1].strip()
+
+            if line.lower().startswith("explanation"):
+                explanation = line.split(":", 1)[1].strip()
 
         return {
             "type": "sentiment",
             "data": {
                 "Item ID": str(row[id_col]).replace(".0", ""),
-                "Sentiment": sentiment
+                "Sentiment": sentiment,
+                "Explanation": explanation
             }
         }
 
