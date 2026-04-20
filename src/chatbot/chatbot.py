@@ -82,6 +82,19 @@ class NewsChatbot:
             return possible_id
 
         return "INVALID_ITEM"
+    # =====================================================
+    # TWO ITEMS DETECTION
+    # =====================================================
+    def extract_two_items(self, question):
+
+        import re
+
+        ids = re.findall(r"\b\d{8,}\b", question)
+
+        if len(ids) >= 2:
+            return ids[0], ids[1]
+
+        return None, None
 
     # =====================================================
     # SECTION DETECTION FROM QUESTION
@@ -108,21 +121,21 @@ class NewsChatbot:
     # =====================================================
     # CHECK IF SECTION EXISTS IN QUESTION
     # =====================================================
-
     def section_exists(self, question):
 
         q = question.lower()
 
-        words = q.split()
+        for section in self.sections:
 
-        for word in words:
+            readable = section.replace("_", " ")
 
-            for section in self.sections:
+            # exact match of section name
+            if readable in q or section in q:
+                return True
 
-                readable = section.replace("_", " ")
-
-                if word in readable:
-                    return True
+        # explicit unselected case
+        if "unselected" in q:
+            return True
 
         return False
 
@@ -192,7 +205,7 @@ class NewsChatbot:
 
     # =====================================================
     # MAIN ASK FUNCTION
-        # =====================================================
+    # =====================================================
     def ask(self, question):
 
         print("\nQUESTION:", question)
@@ -243,10 +256,110 @@ class NewsChatbot:
         print("General Memory:", self.general_memory)
 
         # =====================================================
+        # WHY NOT IN SECTION
+        # =====================================================
+
+        if item_id and "not" in q:
+
+            row = self.get_item_row(item_id)
+
+            if row is None:
+                return {"type": "error", "data": "Item not found"}
+
+            actual_section = None
+
+            # Detect the actual section from dataset
+            for sec in self.sections:
+                col = f"{sec}_answer"
+
+                if col in self.df.columns:
+                    if str(row[col]).strip().lower() == "yes":
+                        actual_section = sec
+                        break
+
+            # Detect the section mentioned in the question
+            mentioned_section = self.extract_section_from_question(question)
+
+            # Fetch dataset reasons
+            actual_reason = None
+            not_reason = None
+
+            if actual_section:
+                reason_col = f"{actual_section}_reason"
+                if reason_col in self.df.columns:
+                    actual_reason = row.get(reason_col)
+
+            if mentioned_section:
+                reason_col = f"{mentioned_section}_reason"
+                if reason_col in self.df.columns:
+                    not_reason = row.get(reason_col)
+
+            return {
+                "type": "section_negation",
+                "data": {
+                    "Item ID": item_id,
+                    "Actual Section": actual_section,
+                    "Actual Reason": actual_reason,
+                    "Not Section": mentioned_section,
+                    "Not Reason": not_reason
+                }
+            }
+
+        # =====================================================
+        # INVALID SECTION IN QUESTION
+        # =====================================================
+
+        if item_id and ("why" in q or "placed" in q) and self.extract_section_from_question(question):
+            if self.section_exists(question) is False:
+
+                row = self.get_item_row(item_id)
+
+                actual_section = "Unknown"
+
+                if row is not None:
+                    for sec in self.sections:
+                        col = f"{sec}_answer"
+                        if col in self.df.columns:
+                            if str(row[col]).strip().lower() == "yes":
+                                actual_section = sec
+                                break
+
+                return {
+                    "type": "invalid_section_query",
+                    "data": {
+                        "Item ID": item_id,
+                        "Actual Section": actual_section,
+                        "Message": "The section mentioned in the question does not exist in the dataset."
+                    }
+                }
+        # =====================================================
+        # RANK EXPLANATION
+        # =====================================================
+
+        if item_id and "rank" in q and "why" in q:
+
+            row = self.get_item_row(item_id)
+
+            if row is None:
+                return {"type": "error", "data": "Item not found"}
+
+            rank = row[self.rank_col]
+
+            return {
+                "type": "rank_explanation",
+                "data": {
+                    "Item ID": item_id,
+                    "Rank": int(rank),
+                    "Explanation": f"This item received rank {rank} based on the dataset ranking."
+                }
+            }
+
+
+        # =====================================================
         # ITEM EXPLANATION (WHY)
         # =====================================================
 
-        if item_id and ("why" in q or "reason" in q):
+        if item_id and ("why" in q or "reason" in q) and "rank" not in q:
 
             row = self.get_item_row(item_id)
 
@@ -273,16 +386,37 @@ class NewsChatbot:
                         break
 
             if not section_found:
-                section_found = "Unknown"
+                section_found = "Unselected"
+
+            # --- NEW: allow LLM explanation ---
+            if reason:
+
+                prompt = f"""
+                Explain why the following news item belongs in this section.
+
+                Headline: {row[self.text_col]}
+                Section: {section_found}
+                Dataset reason: {reason}
+
+                Explain in simple terms.
+                """
+
+                response = self.model.generate_content(prompt)
+
+                explanation = response.text
+
+            else:
+                explanation = "No explanation available."
 
             return {
                 "type": "item_explanation",
                 "data": {
                     "Item ID": item_id,
                     "Section": section_found,
-                    "Reason": reason
+                    "Explanation": explanation
                 }
             }
+
         # =====================================================
         # SENTIMENT
         # =====================================================
@@ -420,6 +554,18 @@ class NewsChatbot:
         if any(x in q for x in ["how many", "total", "count", "number of items"]):
 
             section = self.extract_section_from_question(question)
+
+            # dataset total queries
+            if "dataset" in q or "total" in q:
+                return {
+                    "type": "section_count",
+                    "data": {
+                        "Section": "Total",
+                        "Count": len(self.df)
+                    }
+                }
+
+            # invalid section query
             if section is None and "in" in q:
                 return {
                     "type": "error",
@@ -488,6 +634,97 @@ class NewsChatbot:
                 "data": "Query not related to dataset."
             }
 
+        # =====================================================
+        # ITEM COMPARISON (RANK)
+        # =====================================================
+
+        item1, item2 = self.extract_two_items(question)
+
+        if item1 and item2 and "rank" in q:
+
+            row1 = self.get_item_row(item1)
+            row2 = self.get_item_row(item2)
+
+            if row1 is None or row2 is None:
+                return {"type": "error", "data": "One of the items not found"}
+
+            rank1 = row1[self.rank_col]
+            rank2 = row2[self.rank_col]
+
+            better = item1 if rank1 < rank2 else item2
+
+            return {
+                "type": "rank_comparison",
+                "data": {
+                    "Item1": item1,
+                    "Rank1": int(rank1),
+                    "Item2": item2,
+                    "Rank2": int(rank2),
+                    "Higher Ranked": better
+                }
+            }
+
+        # =====================================================
+        # SECTION COMPARISON
+        # =====================================================
+
+        if item_id and "instead of" in q:
+
+            row = self.get_item_row(item_id)
+
+            if row is None:
+                return {"type": "error", "data": "Item not found"}
+
+            actual_section = None
+
+            for sec in self.sections:
+
+                col = f"{sec}_answer"
+
+                if col in self.df.columns:
+                    if str(row[col]).strip().lower() == "yes":
+                        actual_section = sec
+                        break
+
+            mentioned_section = self.extract_section_from_question(question)
+
+            return {
+                "type": "section_comparison",
+                "data": {
+                    "Item ID": item_id,
+                    "Actual Section": actual_section,
+                    "Compared Section": mentioned_section,
+                    "Explanation": f"The item was classified under {actual_section} according to dataset labels."
+                }
+            }
+
+
+        # =====================================================
+        # ITEM RANK LOOKUP
+        # =====================================================
+
+        if item_id and "rank" in q:
+
+            row = self.get_item_row(item_id)
+
+            if row is None:
+                return {"type": "error", "data": "Item not found"}
+
+            rank_value = "Unranked"
+
+            if self.rank_col and pd.notna(row.get(self.rank_col)):
+                try:
+                    rank_value = int(float(row[self.rank_col]))
+                except:
+                    pass
+
+            return {
+                "type": "item_rank",
+                "data": {
+                    "Item ID": item_id,
+                    "Rank": rank_value
+                }
+            }
 
         # =====================================================
         # RANKING
@@ -508,19 +745,29 @@ class NewsChatbot:
                         ]
 
                     if not section_df.empty:
-                        section_df = section_df.sort_values(self.rank_col)
 
-                        top_row = section_df.iloc[0]
+                        # highest ranked item
+                        if any(x in q for x in ["highest", "top", "best"]):
+                            section_df = section_df.sort_values(self.rank_col, ascending=True)
+                            row = section_df.iloc[0]
+
+                        # lowest ranked item
+                        elif any(x in q for x in ["lowest", "bottom", "worst", "least"]):
+                            section_df = section_df.sort_values(self.rank_col, ascending=False)
+                            row = section_df.iloc[0]
+
+                        else:
+                            section_df = section_df.sort_values(self.rank_col)
+                            row = section_df.iloc[0]
 
                         return {
                             "type": "ranking",
                             "data": [{
                                 "Section": section,
-                                "Item ID": str(top_row[self.id_col]),
-                                "Rank": int(top_row[self.rank_col])
+                                "Item ID": str(row[self.id_col]),
+                                "Rank": int(row[self.rank_col])
                             }]
                         }
-
             # Otherwise return ranking for all sections
             return handle_section_ranking(
                 self.df,
@@ -529,6 +776,7 @@ class NewsChatbot:
                 self.sections,
                 question
             )
+
 
         # =====================================================
         # AGGREGATION

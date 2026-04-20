@@ -203,6 +203,106 @@ def format_response(answer):
             text += f"- **{sec}** → Item `{r['Item ID']}` (Rank {r['Rank']})\n"
 
         return text
+    # =================================
+    #          ITEM  RANK
+    # =================================
+    elif answer["type"] == "item_rank":
+
+        data = answer["data"]
+
+        return f"""
+
+    ### Item Rank
+
+    **Item ID:** `{data['Item ID']}`
+
+    **Rank:** {data['Rank']}
+
+    """
+
+    # =================================
+    #        RANK EXPLANATION
+    # =================================
+
+    elif answer["type"] == "rank_explanation":
+
+        data = answer["data"]
+
+        return f"""
+    ### Rank Explanation
+
+    **Item ID:** `{data['Item ID']}`
+
+    **Rank:** {data['Rank']}
+
+    **Explanation:**
+    {data['Explanation']}
+    """
+
+    # =================================
+    #          INVALID SECTION
+    # =================================
+    elif answer["type"] == "invalid_section_query":
+
+        data = answer["data"]
+
+        section = data["Actual Section"].replace("_", " ").title()
+
+        return f"""
+
+    ### Section Clarification
+
+    **Item ID:** `{data['Item ID']}`
+
+    This item was placed in **{section}**.
+
+    However, the section mentioned in your question **does not exist in the dataset**.
+
+    """
+
+    # =================================
+    #        SECTION NEGATION
+    # =================================
+
+    elif answer["type"] == "section_negation":
+
+        data = answer["data"]
+
+        actual = data["Actual Section"].replace("_", " ").title()
+
+        not_section = data["Not Section"].replace("_", " ").title()
+
+        actual_reason = data.get("Actual Reason", "No explanation available.")
+
+        not_reason = data.get("Not Reason", "No explanation available.")
+
+        return f"""
+
+    ### Section Clarification
+
+
+    **Item ID:** `{data['Item ID']}`
+
+
+    This item belongs to **{actual}**.
+
+
+    **Reason:**
+
+    {actual_reason}
+
+
+    ---
+
+
+    It does **not belong to {not_section}**.
+
+
+    **Reason:**
+
+    {not_reason}
+
+    """
 
 
     # =================================
