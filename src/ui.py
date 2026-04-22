@@ -206,6 +206,24 @@ def format_response(answer):
             text += f"- **{sec}** → Item `{r['Item ID']}` (Rank {r['Rank']})\n"
 
         return text
+
+    # =================================
+    #      RANKED ITEMS IN SECTION
+    # =================================
+    elif answer["type"] == "ranked_section_item_list":
+
+        data = answer["data"]
+
+        section = data["Section"].replace("_", " ").title()
+
+        text = f"### Ranked Items in {section}\n\n"
+        text += f"Number of items: {data['Count']}\n\n"
+
+        for item in data["Items"]:
+            text += f"- {item['Item ID']} (Rank {item['Rank']})\n"
+
+        return text
+
     # =================================
     #          ITEM  RANK
     # =================================
@@ -226,21 +244,21 @@ def format_response(answer):
     # =================================
     #        RANK EXPLANATION
     # =================================
-
     elif answer["type"] == "rank_explanation":
 
         data = answer["data"]
 
-        return f"""
-    ### Rank Explanation
+        text = "### Rank Explanation\n\n"
 
-    **Item ID:** `{data['Item ID']}`
+        text += f"**Item ID:** `{data['Item ID']}`\n\n"
+        text += f"**Rank:** {data['Rank']}\n\n"
+        text += f"**Score:** {data.get('Score', 'N/A')}\n\n"
+        text += f"**Ordering Section:** {data.get('Ordering Section', 'N/A')}\n\n"
+        text += f"**Ordering Reason:** {data.get('Ordering Reason', 'N/A')}\n\n"
+        text += f"**Date:** {data.get('Date', 'N/A')}\n\n"
+        text += f"**Page Number:** {data.get('Page Number', 'N/A')}\n"
 
-    **Rank:** {data['Rank']}
-
-    **Explanation:**
-    {data['Explanation']}
-    """
+        return text
 
     # =================================
     #          INVALID SECTION

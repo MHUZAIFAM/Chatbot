@@ -28,6 +28,8 @@ class NewsChatbot:
         self.text_col = self.detect_column(["headline", "title", "name"])
         self.media_col = "Media Outlet"
 
+        self.last_item = None
+
         # normalize item ids
         if "Item ID" in self.df.columns:
             self.df["Item ID"] = (
@@ -53,6 +55,26 @@ class NewsChatbot:
 
         print("Detected Sections:", self.sections)
         print("Chatbot Ready ✅")
+
+
+    # =====================================================
+    # NUMPY CLEANER
+    # =====================================================
+    def clean_value(self, value):
+
+        import numpy as np
+        import pandas as pd
+
+        if isinstance(value, (np.integer,)):
+            return int(value)
+
+        if isinstance(value, (np.floating,)):
+            return float(value)
+
+        if pd.isna(value):
+            return None
+
+        return value
 
     # =====================================================
     # COLUMN DETECTION
@@ -238,12 +260,24 @@ class NewsChatbot:
 
             last_item = self.get_last_item_from_memory()
 
+            # prevent dataset queries from using item memory
+            dataset_query_words = [
+                "items",
+                "list",
+                "show",
+                "display",
+                "how many",
+                "count"
+            ]
+
             if (
                     last_item
                     and any(x in q for x in ["why", "rank", "placed", "sentiment"])
                     and not any(x in q for x in dataset_words)
+                    and not any(x in q for x in dataset_query_words)
             ):
                 item_id = last_item
+                
         # -------------------------------
         # MEMORY UPDATE
         # -------------------------------
@@ -339,21 +373,45 @@ class NewsChatbot:
         # RANK EXPLANATION
         # =====================================================
 
-        if item_id and "rank" in q and "why" in q:
+        if item_id and "why" in q and any(
+                x in q for x in [
+                    "rank", "ranked",
+                    "first", "second", "third", "fourth", "fifth",
+                    "top", "highest"
+                ]
+        ):
 
             row = self.get_item_row(item_id)
 
             if row is None:
                 return {"type": "error", "data": "Item not found"}
 
-            rank = row[self.rank_col]
+            # safe rank extraction
+            rank = row[self.rank_col] if self.rank_col in row else None
+
+            rank_value = "Unranked"
+            if pd.notna(rank):
+                try:
+                    rank_value = int(float(rank))
+                except:
+                    rank_value = str(rank)
+
+            score = row.get("Score")
+            ordering_section = row.get("Ordering_Section")
+            ordering_reason = row.get("Ordering_Reason")
+            date = row.get("Date")
+            page = row.get("Page Number")
 
             return {
                 "type": "rank_explanation",
                 "data": {
-                    "Item ID": item_id,
-                    "Rank": int(rank),
-                    "Explanation": f"This item received rank {rank} based on the dataset ranking."
+                    "Item ID": str(item_id),
+                    "Rank": int(rank_value) if isinstance(rank_value, (int, float)) else rank_value,
+                    "Score": float(score) if pd.notna(score) else None,
+                    "Date": str(date) if date is not None else None,
+                    "Page Number": int(page) if pd.notna(page) else None,
+                    "Ordering Section": str(ordering_section) if ordering_section else None,
+                    "Ordering Reason": str(ordering_reason) if ordering_reason else None
                 }
             }
 
@@ -612,9 +670,20 @@ class NewsChatbot:
         # LIST ITEMS IN SECTION
         # =====================================================
 
-        if "items" in q and ("list" in q or "show" in q or "what" in q):
-
+        if any(x in q for x in ["list", "show", "display"]) and (
+                "item" in q or "items" in q or "those" in q or "them" in q
+        ):
             section = self.extract_section_from_question(question)
+
+            # If section not mentioned, recover from previous question
+            if not section and len(self.general_memory) >= 2:
+                last_q = self.general_memory[-2]
+                section = self.extract_section_from_question(last_q)
+
+            # If user says "those" or "them"
+            if not section and any(x in q for x in ["those", "them"]) and len(self.general_memory) >= 2:
+                last_q = self.general_memory[-2]
+                section = self.extract_section_from_question(last_q)
 
             # UNSELECTED ITEMS
             if section == "unselected":
@@ -651,9 +720,44 @@ class NewsChatbot:
                 answer_col = f"{section}_answer"
 
                 if answer_col in self.df.columns:
-                    section_items = self.df[
+
+                    section_df = self.df[
                         self.df[answer_col].astype(str).str.lower() == "yes"
-                        ][self.id_col].astype(str).tolist()
+                        ]
+
+                    # If user asks for ranked items
+                    if "ranked" in q and self.rank_col:
+
+                        section_df = section_df[pd.notna(section_df[self.rank_col])]
+
+                        items = []
+
+                        for _, row in section_df.iterrows():
+                            items.append({
+                                "Item ID": str(row[self.id_col]),
+                                "Rank": int(row[self.rank_col])
+                            })
+
+                        return {
+                            "type": "ranked_section_item_list",
+                            "data": {
+                                "Section": section,
+                                "Count": len(items),
+                                "Items": items
+                            }
+                        }
+
+                    # otherwise normal list
+                    section_items = section_df[self.id_col].astype(str).tolist()
+
+                    return {
+                        "type": "section_item_list",
+                        "data": {
+                            "Section": section,
+                            "Count": len(section_items),
+                            "Items": section_items
+                        }
+                    }
 
                     return {
                         "type": "section_item_list",
@@ -736,13 +840,16 @@ class NewsChatbot:
             "dataset", "news",
             "item", "items",
             "row", "rows",
-            "count"
+            "count",
+            "list", "show", "display",
+            "those", "them"
         ]
 
         if (
                 not item_id
                 and "schema" not in intents
                 and not any(term in q for term in dataset_terms)
+                and not any(x in q for x in ["list", "show", "display", "those", "them"])
                 and "rank" not in q
                 and "lowest" not in q
                 and "highest" not in q
@@ -766,8 +873,8 @@ class NewsChatbot:
             if row1 is None or row2 is None:
                 return {"type": "error", "data": "One of the items not found"}
 
-            rank1 = row1[self.rank_col]
-            rank2 = row2[self.rank_col]
+            rank1 = self.clean_value(row1[self.rank_col])
+            rank2 = self.clean_value(row2[self.rank_col])
 
             better = item1 if rank1 < rank2 else item2
 
@@ -847,7 +954,7 @@ class NewsChatbot:
         # =====================================================
         # RANKING
         # =====================================================
-        if "ranking" in intents:
+        if "ranking" in intents and "why" not in q:
 
             section = self.extract_section_from_question(question)
 
@@ -862,6 +969,10 @@ class NewsChatbot:
                         self.df[answer_col].astype(str).str.lower() == "yes"
                         ]
 
+                    # remove rows without rank
+                    if self.rank_col:
+                        section_df = section_df[pd.notna(section_df[self.rank_col])]
+
                     if not section_df.empty:
 
                         # highest ranked item
@@ -874,26 +985,43 @@ class NewsChatbot:
                             section_df = section_df.sort_values(self.rank_col, ascending=False)
                             row = section_df.iloc[0]
 
+                        # default ranking
                         else:
                             section_df = section_df.sort_values(self.rank_col)
                             row = section_df.iloc[0]
+
+                        item_id = str(row[self.id_col])
+                        rank_value = self.clean_value(row[self.rank_col])
+
+                        # 🔹 Save last ranked item for conversational follow-up
+                        self.last_item = item_id
 
                         return {
                             "type": "ranking",
                             "data": [{
                                 "Section": section,
-                                "Item ID": str(row[self.id_col]),
-                                "Rank": int(row[self.rank_col])
+                                "Item ID": item_id,
+                                "Rank": rank_value
                             }]
                         }
+
             # Otherwise return ranking for all sections
-            return handle_section_ranking(
+            result = handle_section_ranking(
                 self.df,
                 self.rank_col,
                 self.id_col,
                 self.sections,
                 question
             )
+
+            # 🔹 also save last item if ranking result returns one
+            try:
+                if result["data"]:
+                    self.last_item = result["data"][0]["Item ID"]
+            except:
+                pass
+
+            return result
 
 
         # =====================================================
