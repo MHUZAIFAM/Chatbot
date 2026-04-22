@@ -651,8 +651,8 @@ class NewsChatbot:
         # LIST ITEMS IN SECTION
         # =====================================================
 
-        if any(x in q for x in ["list", "show", "display"]) and (
-                "item" in q or "items" in q or "those" in q or "them" in q
+        if any(x in q for x in ["list", "show", "display", "what are", "which"]) and (
+                "item" in q or "items" in q or "ranked"
         ):
             section = self.extract_section_from_question(question)
 
@@ -800,9 +800,16 @@ class NewsChatbot:
             answer_col = f"{section}_answer"
 
             if answer_col in self.df.columns:
-                count = len(
-                    self.df[self.df[answer_col].astype(str).str.lower() == "yes"]
-                )
+
+                section_df = self.df[
+                    self.df[answer_col].astype(str).str.lower() == "yes"
+                    ]
+
+                # if user asks for ranked items
+                if "ranked" in q and self.rank_col:
+                    section_df = section_df[pd.notna(section_df[self.rank_col])]
+
+                count = len(section_df)
 
                 return {
                     "type": "section_count",
@@ -933,8 +940,11 @@ class NewsChatbot:
         # =====================================================
         # RANKING
         # =====================================================
-        if "ranking" in intents and "why" not in q:
-
+        if (
+                "ranking" in intents
+                and "why" not in q
+                and not any(x in q for x in ["list", "items", "show", "display"])
+        ):
             section = self.extract_section_from_question(question)
 
             # If a specific section is asked
