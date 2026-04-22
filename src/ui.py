@@ -173,8 +173,7 @@ def format_response(answer):
         if section != "Unknown":
             section = section.replace("_", " ").title()
 
-        reason = item.get("Reason", "No explanation available.")
-
+        reason = item.get("Explanation", "No explanation available.")
         return f"""
 
 ### Item Explanation

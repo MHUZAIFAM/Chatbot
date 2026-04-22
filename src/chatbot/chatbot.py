@@ -56,7 +56,6 @@ class NewsChatbot:
         print("Detected Sections:", self.sections)
         print("Chatbot Ready ✅")
 
-
     # =====================================================
     # NUMPY CLEANER
     # =====================================================
@@ -107,6 +106,7 @@ class NewsChatbot:
             return possible_id
 
         return "INVALID_ITEM"
+
     # =====================================================
     # TWO ITEMS DETECTION
     # =====================================================
@@ -277,7 +277,7 @@ class NewsChatbot:
                     and not any(x in q for x in dataset_query_words)
             ):
                 item_id = last_item
-                
+
         # -------------------------------
         # MEMORY UPDATE
         # -------------------------------
@@ -505,23 +505,8 @@ class NewsChatbot:
             if not section_found:
                 section_found = "Unselected"
 
-            # --- NEW: allow LLM explanation ---
-            if reason:
-
-                prompt = f"""
-                Explain why the following news item belongs in this section.
-
-                Headline: {row[self.text_col]}
-                Section: {section_found}
-                Dataset reason: {reason}
-
-                Explain in simple terms.
-                """
-
-                response = self.model.generate_content(prompt)
-
-                explanation = response.text
-
+            if reason and str(reason).strip() != "":
+                explanation = str(reason).strip()
             else:
                 explanation = "No explanation available."
 
@@ -534,7 +519,6 @@ class NewsChatbot:
                 }
             }
 
-
         # =====================================================
         # SENTIMENT
         # =====================================================
@@ -546,7 +530,6 @@ class NewsChatbot:
                 self.text_col,
                 item_id
             )
-
 
         # =====================================================
         # ITEM DETAILS (Tell me about item)
@@ -607,7 +590,6 @@ class NewsChatbot:
                 }
             }
 
-
         # =====================================================
         # ITEM SECTION LOOKUP
         # =====================================================
@@ -636,7 +618,6 @@ class NewsChatbot:
                     "Section": section_found
                 }
             }
-
 
         # =====================================================
         # SCHEMA
@@ -767,7 +748,6 @@ class NewsChatbot:
                             "Items": section_items
                         }
                     }
-
 
         # =====================================================
         # ITEM COUNT (DYNAMIC)
@@ -923,7 +903,6 @@ class NewsChatbot:
                 }
             }
 
-
         # =====================================================
         # ITEM RANK LOOKUP
         # =====================================================
@@ -1022,7 +1001,6 @@ class NewsChatbot:
                 pass
 
             return result
-
 
         # =====================================================
         # AGGREGATION
