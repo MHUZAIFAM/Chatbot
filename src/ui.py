@@ -121,19 +121,22 @@ def format_response(answer):
     # - rank
     # - media outlet
     # - relevant article text
-
     elif answer["type"] == "item_details":
 
         data = answer["data"]
 
-        section = data["Section"].replace("_", " ").title()
+        section_raw = data.get("Section")
+        section = section_raw.replace("_", " ").title() if section_raw else "Unselected"
 
-        text = data.get("Relevant Text", "")
+        text = data.get("Relevant Text")
 
-        # Clean formatting so article text is readable
-        clean_text = text.replace('" "', '\n\n')
-        clean_text = clean_text.replace('..."', '...\n\n')
-        clean_text = clean_text.replace('."', '.\n\n')
+        if not text:
+            clean_text = "No article text available for this item."
+        else:
+            clean_text = str(text)
+            clean_text = clean_text.replace('" "', '\n\n')
+            clean_text = clean_text.replace('..."', '...\n\n')
+            clean_text = clean_text.replace('."', '.\n\n')
 
         return f"""
 
@@ -303,6 +306,52 @@ def format_response(answer):
     {not_reason}
 
     """
+    # =================================
+    #          ITEM LIST
+    # =================================
+
+    elif answer["type"] == "section_item_list":
+
+        data = answer["data"]
+
+        section = data["Section"].replace("_", " ").title()
+        count = data["Count"]
+        items = data["Items"]
+
+        text = f"### Items in {section}\n\n"
+        text += f"**Number of items:** {count}\n\n"
+        text += "**Item IDs:**\n"
+
+        for item in items:
+            text += f"- {item}\n"
+
+        return text
+
+    # =================================
+    #          ITEM UNSELECTED
+    # =================================
+    elif answer["type"] == "unselected_reasoning":
+
+        data = answer.get("data", {})
+
+        text = "### Unselected Item Explanation\n\n"
+        text += f"**Item ID:** `{data.get('Item ID', 'Unknown')}`\n\n"
+
+        section_reasons = data.get("Section_Reasons") or []
+
+        for sec in section_reasons:
+            section_raw = sec.get("Section")
+            reason_raw = sec.get("Reason")
+
+            section = str(section_raw).replace("_", " ").title() if section_raw else "Unknown Section"
+            reason = reason_raw if reason_raw else "No reason available."
+
+            text += f"**{section}**\n"
+            text += f"Reason for not selecting:\n{reason}\n\n"
+
+        text += "**Conclusion:** The item does not meet the criteria for any section, therefore it was placed in **Unselected**."
+
+        return text
 
 
     # =================================

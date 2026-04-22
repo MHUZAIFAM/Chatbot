@@ -36,6 +36,9 @@ class NewsChatbot:
                 .str.replace(r"\.0$", "", regex=True)
             )
 
+        # remove whitespace around IDs
+        self.df[self.id_col] = self.df[self.id_col].astype(str).str.strip()
+
         # detect sections
         self.sections = [
             col.replace("_answer", "")
@@ -70,7 +73,7 @@ class NewsChatbot:
         import re
 
         # find any number that looks like an item id
-        match = re.search(r"\b\d{8,}\b", question)
+        match = re.search(r"\b[A-Za-z]?\d{8,}\b", question)
 
         if not match:
             return None
@@ -354,6 +357,62 @@ class NewsChatbot:
                 }
             }
 
+        # =====================================================
+        # WHY ITEM NOT SELECTED (UNSELECTED REASONING)
+        # =====================================================
+
+        if item_id and ("not selected" in q or "unselected" in q):
+
+            row = self.get_item_row(item_id)
+
+            if row is None:
+                return {"type": "error", "data": "Item not found"}
+
+            # check if item actually belongs to a section
+            selected_section = None
+
+            for sec in self.sections:
+                answer_col = f"{sec}_answer"
+
+                if answer_col in self.df.columns:
+                    if str(row[answer_col]).strip().lower() == "yes":
+                        selected_section = sec
+                        break
+
+            # if item was selected, don't run this logic
+            if selected_section:
+                return {
+                    "type": "item_explanation",
+                    "data": {
+                        "Item ID": item_id,
+                        "Section": selected_section,
+                        "Explanation": "This item was selected for a section, so it is not unselected."
+                    }
+                }
+
+            # collect reasons for all sections
+            section_reasons = []
+
+            for sec in self.sections:
+
+                reason_col = f"{sec}_reason"
+
+                if reason_col in self.df.columns:
+                    reason = row.get(reason_col)
+
+                    if pd.notna(reason):
+                        section_reasons.append({
+                            "Section": sec,
+                            "Reason": reason
+                        })
+
+            return {
+                "type": "unselected_reasoning",
+                "data": {
+                    "Item ID": item_id,
+                    "Section_Reasons": section_reasons
+                }
+            }
 
         # =====================================================
         # ITEM EXPLANATION (WHY)
@@ -417,6 +476,7 @@ class NewsChatbot:
                 }
             }
 
+
         # =====================================================
         # SENTIMENT
         # =====================================================
@@ -475,7 +535,7 @@ class NewsChatbot:
                     if str(row[answer_col]).strip().lower() == "yes":
 
                         if text_col in self.df.columns:
-                            relevant_text = row.get(text_col)
+                            relevant_text = row.get(text_col) or ""
 
                         break
             return {
@@ -547,6 +607,64 @@ class NewsChatbot:
                 "type": "section_counts",
                 "data": self.analyze_sections()
             }
+
+        # =====================================================
+        # LIST ITEMS IN SECTION
+        # =====================================================
+
+        if "items" in q and ("list" in q or "show" in q or "what" in q):
+
+            section = self.extract_section_from_question(question)
+
+            # UNSELECTED ITEMS
+            if section == "unselected":
+
+                unselected_items = []
+
+                for _, row in self.df.iterrows():
+
+                    matched = False
+
+                    for sec in self.sections:
+                        col = f"{sec}_answer"
+
+                        if col in self.df.columns:
+                            if str(row[col]).strip().lower() == "yes":
+                                matched = True
+                                break
+
+                    if not matched:
+                        unselected_items.append(str(row[self.id_col]))
+
+                return {
+                    "type": "section_item_list",
+                    "data": {
+                        "Section": "Unselected",
+                        "Count": len(unselected_items),
+                        "Items": unselected_items
+                    }
+                }
+
+            # ITEMS IN SPECIFIC SECTION
+            if section:
+
+                answer_col = f"{section}_answer"
+
+                if answer_col in self.df.columns:
+                    section_items = self.df[
+                        self.df[answer_col].astype(str).str.lower() == "yes"
+                        ][self.id_col].astype(str).tolist()
+
+                    return {
+                        "type": "section_item_list",
+                        "data": {
+                            "Section": section,
+                            "Count": len(section_items),
+                            "Items": section_items
+                        }
+                    }
+
+
         # =====================================================
         # ITEM COUNT (DYNAMIC)
         # =====================================================
