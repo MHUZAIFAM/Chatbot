@@ -23,12 +23,12 @@ Features:
 - Streamlit interface
 
 ## Project Structure
-
+```
 Chatbot
 │
 ├── Chatbot_V1.0_RuleBased
 ├── Chatbot_V2.0_Agentic
-
+```
 ## Future Improvements
 
 - Fully autonomous agent planning
