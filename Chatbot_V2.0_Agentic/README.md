@@ -1,4 +1,4 @@
-\# Agentic News Dataset Chatbot
+# Agentic News Dataset Chatbot
 
 
 
@@ -9,15 +9,10 @@ An \*\*Agentic AI-powered chatbot\*\* that allows users to interact with a struc
 The system combines:
 
 
-
-\* deterministic data analysis
-
-\* conversational memory
-
-\* LLM reasoning
-
-\* structured dataset retrieval
-
+- deterministic data analysis
+- conversational memory
+- LLM reasoning
+- structured dataset retrieval
 
 
 to answer analytical questions about news articles, rankings, sections, and placement explanations.
@@ -48,64 +43,30 @@ The chatbot supports queries such as:
 
 
 
-\# Agentic Architecture
+# Agentic Architecture
 
-
-
-The system follows a modular \*\*agent-based architecture\*\*:
-
-
+The system follows a modular **agent-based architecture**:
 
 ```
-
 User
-
 │
-
 ▼
-
 Streamlit UI (src/ui.py)
-
 │
-
 ▼
-
 FastAPI Backend (src/main.py)
-
 │
-
 ▼
-
 ChatbotAgent
-
-│
-
 ├── DatasetManager
-
-│
-
 ├── QueryEngine
-
 │   Deterministic dataset analytics
-
-│
-
 ├── DataRetriever
-
 │   Retrieves relevant dataset rows
-
-│
-
 ├── AnswerGenerator
-
 │   Uses Gemini LLM for reasoning
-
-│
-
 └── ConversationMemory
-
-&#x20;   Stores previous interactions
-
+    Stores previous interactions
 ```
 
 
@@ -114,19 +75,17 @@ This architecture allows the chatbot to combine:
 
 
 
-\* rule-based reasoning
-
-\* structured data querying
-
-\* LLM-powered explanations
+- rule-based reasoning
+- structured data querying
+- LLM-powered explanations
 
 
 
-\---
+---
 
 
 
-\# Project Structure
+# Project Structure
 
 
 
@@ -186,15 +145,15 @@ Chatbot\_V2.0\_Agentic
 
 
 
-\---
+---
 
 
 
-\# Key Features
+# Key Features
 
 
 
-\## Dataset Exploration
+## Dataset Exploration
 
 
 
@@ -202,13 +161,10 @@ Users can query dataset structure:
 
 
 
-\* Total number of items
-
-\* Number of sections
-
-\* Items per section
-
-\* Unselected items
+- Total number of items
+- Number of sections
+- Items per section
+- Unselected items
 
 
 
@@ -228,11 +184,11 @@ How many items are in each section?
 
 
 
-\---
+---
 
 
 
-\## Section Analysis
+## Section Analysis
 
 
 
@@ -252,11 +208,11 @@ What were the unranked items in this section?
 
 
 
-\---
+---
 
 
 
-\## Ranking Analysis
+## Ranking Analysis
 
 
 
@@ -276,11 +232,11 @@ List ranked items in a section
 
 
 
-\---
+---
 
 
 
-\## Item Placement
+## Item Placement
 
 
 
@@ -312,15 +268,15 @@ Item 1167981127 was placed in the 'Calvary Coverage' section.
 
 
 
-\---
+---
 
 
 
-\## Selection Explanations
+## Selection Explanations
 
 
 
-The chatbot can explain \*\*why an item was not selected\*\* in sections.
+The chatbot can explain **why an item was not selected** in sections.
 
 
 
@@ -340,11 +296,11 @@ The system reads dataset \*\*\_reason columns\*\* and explains exclusion reasons
 
 
 
-\---
+---
 
 
 
-\## Conversational Memory
+## Conversational Memory
 
 
 
@@ -368,23 +324,21 @@ The memory system resolves references like:
 
 
 
-\* this section
-
-\* those items
-
-\* why
+- this section
+- those items
+- why
 
 
 
-\---
+---
 
 
 
-\# Requirements
+# Requirements
 
 
 
-Python \*\*3.10+\*\* recommended.
+Python **3.10+** recommended.
 
 
 
@@ -400,11 +354,11 @@ pip install fastapi uvicorn streamlit pandas python-dotenv google-generativeai
 
 
 
-\---
+---
 
 
 
-\# Environment Setup
+# Environment Setup
 
 
 
@@ -424,19 +378,19 @@ This key is used by the chatbot for LLM reasoning and explanations.
 
 
 
-\---
+---
 
 
 
-\# Running the Application
+# Running the Application
 
 
 
-Open \*\*two terminals\*\*.
+Open **two terminals**.
 
 
 
-\### Terminal 1 — Start FastAPI
+### Terminal 1 — Start FastAPI
 
 
 
@@ -448,7 +402,7 @@ uvicorn src.main:app --reload --port 8001
 
 
 
-\### Terminal 2 — Start Streamlit UI
+### Terminal 2 — Start Streamlit UI
 
 
 
@@ -460,15 +414,15 @@ streamlit run src/ui.py
 
 
 
-\---
+---
 
 
 
-\# Accessing the Application
+# Accessing the Application
 
 
 
-\### Streamlit Chat Interface
+### Streamlit Chat Interface
 
 
 
@@ -484,11 +438,11 @@ Interactive chatbot interface.
 
 
 
-\---
+---
 
 
 
-\### FastAPI Documentation
+### FastAPI Documentation
 
 
 
@@ -504,11 +458,11 @@ API endpoint testing via Swagger.
 
 
 
-\---
+---
 
 
 
-\### Memory Endpoint
+### Memory Endpoint
 
 
 
@@ -524,31 +478,31 @@ Displays the chatbot conversation memory.
 
 
 
-\---
+---
 
 
 
-\# Technology Stack
+# Technology Stack
 
 
 
-\* \*\*FastAPI\*\* – backend API
+- **FastAPI** – backend API
 
-\* \*\*Streamlit\*\* – interactive UI
+- **Streamlit** – interactive UI
 
-\* \*\*Pandas\*\* – dataset processing
+- **Pandas** – dataset processing
 
-\* \*\*Google Gemini API\*\* – reasoning \& explanations
+- **Google Gemini API** – reasoning & explanations
 
-\* \*\*Python\*\* – core system logic
-
-
-
-\---
+- **Python** – core system logic
 
 
 
-\# Security
+---
+
+
+
+# Security
 
 
 
@@ -576,25 +530,25 @@ and excluded from version control via:
 
 
 
-\---
+---
 
 
 
-\# Version
+# Version
 
 
 
-This version introduces the \*\*Agentic architecture\*\*, improving:
+This version introduces the **Agentic architecture**, improving:
 
 
 
-\* modular design
+- modular design
 
-\* conversational memory
+- conversational memory
 
-\* reasoning capabilities
+- reasoning capabilities
 
-\* dataset analytics
+- dataset analytics
 
 
 
