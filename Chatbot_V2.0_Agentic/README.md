@@ -269,7 +269,7 @@ Why was item 1167634477 unselected?
 
 
 
-The system reads dataset \*\*\_reason columns\*\* and explains exclusion reasons.
+The system reads dataset **_reason columns** and explains exclusion reasons.
 
 
 
@@ -345,7 +345,7 @@ Create a `.env` file:
 
 ```
 
-GEMINI\_API\_KEY=your\_api\_key\_here
+GEMINI_API_KEY=your_api_key_here
 
 ```
 
