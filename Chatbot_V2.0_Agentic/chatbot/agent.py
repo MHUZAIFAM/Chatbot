@@ -82,9 +82,34 @@ class ChatbotAgent:
 
     def try_deterministic(self, question):
 
-
         q = question.lower()
+        item_id = self.extract_item_id(question)
         section = self.extract_section(question)
+
+        # FOLLOW-UP WHY QUESTION
+        if q.strip().startswith("why"):
+
+            last_question, last_answer = self.memory.last()
+
+            if last_question:
+
+                last_item = self.extract_item_id(last_question)
+
+                if last_item:
+
+                    reasons = self.query_engine.unselected_reasons(last_item)
+
+                    if reasons:
+
+                        lines = []
+                        lines.append(f"Item {last_item} was not selected for the following reasons:")
+                        lines.append("")
+
+                        for sec, reason in reasons:
+                            readable = self.format_section(sec)
+                            lines.append(f"- {readable}: {reason}")
+
+                        return "\n".join(lines)
 
         # TOTAL RANKED ITEMS
         if "how many ranked items" in q or "total ranked items" in q:
@@ -167,6 +192,34 @@ class ChatbotAgent:
 
             return "\n".join(lines)
 
+
+        # WHY WAS ITEM UNSELECTED
+        if item_id and "why" in q and "unselected" in q:
+
+            reasons = self.query_engine.unselected_reasons(item_id)
+
+            if not reasons:
+                return f"No explanation available for why item {item_id} was unselected."
+
+            lines = []
+            lines.append(f"Item {item_id} was not selected for the following reasons:")
+            lines.append("")
+
+            for sec, reason in reasons:
+                readable = self.format_section(sec)
+
+                lines.append(f"- {readable}: {reason}")
+
+            return "\n".join(lines)
+
+        # WAS ITEM UNSELECTED
+        if item_id and "unselected" in q:
+
+            if self.query_engine.is_unselected(item_id):
+                return f"Yes, item {item_id} was an unselected item."
+            else:
+                return f"No, item {item_id} was selected and ranked."
+
         # RANKED ITEMS PER SECTION
         if "ranked" in q and any(x in q for x in ["per section", "each section", "by section"]):
             lines = []
@@ -182,6 +235,7 @@ class ChatbotAgent:
                 lines.append(f"{readable}: {count} ranked items")
 
             return "\n".join(lines)
+
 
         # ITEMS PER SECTION
         if "items per section" in q or "items in each section" in q:
@@ -206,8 +260,21 @@ class ChatbotAgent:
 
             return "\n".join(lines)
 
+        # ITEM PLACEMENT (SECTION)
+        if item_id and ("placed" in q or "section" in q):
+
+            section = self.query_engine.get_item_section(item_id)
+
+            if section:
+                readable = self.format_section(section)
+                return f"Item {item_id} was placed in the '{readable}' section."
+
+            else:
+                return f"Item {item_id} was not placed in any section and thus Unselected."
+
+
         # COUNT UNSELECTED ITEMS
-        if "unselected" in q:
+        if "how many" in q and "unselected" in q:
             return f"There are {self.query_engine.count_unselected_items()} unselected items in the dataset."
 
         # COUNT ITEMS

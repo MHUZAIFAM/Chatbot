@@ -11,7 +11,6 @@ class QueryEngine:
 
         self.sections = dataset_manager.sections
 
-
     # =====================================================
     # DATASET LEVEL
     # =====================================================
@@ -330,3 +329,99 @@ class QueryEngine:
             })
 
         return results
+
+    # =====================================================
+    # GET ITEM SECTION
+    # =====================================================
+
+    def get_item_section(self, item_id):
+
+        row = self.dataset.df[self.dataset.df[self.dataset.id_col] == item_id]
+
+        if row.empty:
+            return None
+
+        row = row.iloc[0]
+
+        for sec in self.dataset.sections:
+
+            col = f"{sec}_answer"
+
+            if col in self.dataset.df.columns:
+
+                value = str(row[col]).lower()
+
+                if value in ["yes", "true", "1"]:
+                    return sec
+
+        return None
+
+    def get_item_section(self, item_id):
+
+        df = self.dataset.df
+
+        row = df[df[self.dataset.id_col] == item_id]
+
+        if row.empty:
+            return None
+
+        row = row.iloc[0]
+
+        for sec in self.dataset.sections:
+
+            col = f"{sec}_answer"
+
+            if col in df.columns:
+
+                val = str(row[col]).lower()
+
+                if val in ["yes", "true", "1"]:
+                    return sec
+
+        return None
+
+    def is_unselected(self, item_id):
+
+        row = self.df[self.df[self.id_col].astype(str) == str(item_id)]
+
+        if row.empty:
+            return None
+
+        row = row.iloc[0]
+
+        for sec in self.sections:
+
+            col = f"{sec}_answer"
+
+            if col in self.df.columns:
+
+                val = str(row[col]).lower()
+
+                if val in ["yes", "true", "1"]:
+                    return False  # item is selected
+
+        return True  # item is unselected
+
+    def unselected_reasons(self, item_id):
+
+        row = self.df[self.df[self.id_col].astype(str) == str(item_id)]
+
+        if row.empty:
+            return []
+
+        row = row.iloc[0]
+
+        reasons = []
+
+        for sec in self.sections:
+
+            col = f"{sec}_reason"
+
+            if col in self.df.columns:
+
+                reason = row[col]
+
+                if isinstance(reason, str) and reason.strip() and reason.lower() != "nan":
+                    reasons.append((sec, reason))
+
+        return reasons

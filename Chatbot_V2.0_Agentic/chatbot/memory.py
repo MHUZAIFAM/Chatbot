@@ -47,6 +47,19 @@ class ConversationMemory:
         return summary_text
 
     # ---------------------------------------------------
+    # Return memory Last
+    # ---------------------------------------------------
+
+    def last(self):
+
+        if not self.history:
+            return None, None
+
+        last_turn = self.history[-1]
+
+        return last_turn["question"], last_turn["answer"]
+
+    # ---------------------------------------------------
     # Clear memory
     # ---------------------------------------------------
 
