@@ -86,9 +86,19 @@ class ChatbotAgent:
         item_id = self.extract_item_id(question)
         section = self.extract_section(question)
 
-        # FOLLOW-UP WHY QUESTION
-        if q.strip().startswith("why"):
+        # MEMORY SECTION RESOLUTION
+        if not section:
 
+            last_question, last_answer = self.memory.last()
+
+            if last_question:
+                prev_section = self.extract_section(last_question)
+
+                if prev_section:
+                    section = prev_section
+
+        # FOLLOW-UP WHY QUESTION
+        if "why" in q:
             last_question, last_answer = self.memory.last()
 
             if last_question:
@@ -111,9 +121,18 @@ class ChatbotAgent:
 
                         return "\n".join(lines)
 
+
         # TOTAL RANKED ITEMS
         if "how many ranked items" in q or "total ranked items" in q:
             return f"There are {self.query_engine.count_ranked_items()} ranked items in the dataset."
+
+        # RANKED ITEMS IN SECTION
+        if section and "ranked" in q and "how many" in q:
+            count = self.query_engine.count_ranked_items_in_section(section)
+
+            readable = self.format_section(section)
+
+            return f"There are {count} ranked items in the {readable} section."
 
         # HIGHEST RANKED PER SECTION
         if "highest ranked" in q and any(x in q for x in ["per section", "each section", "of each section"]):
@@ -176,6 +195,48 @@ class ChatbotAgent:
 
                 return f"The lowest ranked item in {readable} is {item['Item ID']} with rank {item['Rank']}."
 
+        # UNRANKED ITEMS IN SECTION
+        if section and "unranked" in q:
+
+            items = self.query_engine.items_in_section(section)
+
+            readable = self.format_section(section)
+
+            unranked = [i for i in items if i["Rank"] is None]
+
+            if not unranked:
+                return f"There are no unranked items in the {readable} section."
+
+            lines = []
+            lines.append(f"Unranked items in {readable}:")
+            lines.append("")
+
+            for item in unranked:
+                lines.append(f"- {item['Item ID']}")
+
+            return "\n".join(lines)
+
+        # RANKED ITEMS IN SECTION
+        if section and "ranked" in q and "items" in q:
+
+            items = self.query_engine.items_in_section(section)
+
+            readable = self.format_section(section)
+
+            ranked = [i for i in items if i["Rank"] is not None]
+
+            if not ranked:
+                return f"There are no ranked items in the {readable} section."
+
+            lines = []
+            lines.append(f"Ranked items in {readable}:")
+            lines.append("")
+
+            for item in ranked:
+                lines.append(f"- {item['Item ID']} (Rank {item['Rank']})")
+
+            return "\n".join(lines)
+
         # LIST ALL RANKED ITEMS
         if "ranked items" in q and any(x in q for x in ["list", "show", "display", "what"]):
             items = self.query_engine.all_ranked_items()
@@ -192,6 +253,27 @@ class ChatbotAgent:
 
             return "\n".join(lines)
 
+        # LIST ITEMS IN SECTION
+        if section and any(x in q for x in ["list", "show", "display"]) and "items" in q:
+            items = self.query_engine.items_in_section(section)
+
+            readable = self.format_section(section)
+
+            if not items:
+                return f"No items were found in the {readable} section."
+
+            lines = []
+            lines.append(f"Items in {readable}:")
+            lines.append("")
+
+            for item in items:
+
+                if item["Rank"] is not None:
+                    lines.append(f"- {item['Item ID']} (Rank {item['Rank']})")
+                else:
+                    lines.append(f"- {item['Item ID']} (Unranked)")
+
+            return "\n".join(lines)
 
         # WHY WAS ITEM UNSELECTED
         if item_id and "why" in q and "unselected" in q:

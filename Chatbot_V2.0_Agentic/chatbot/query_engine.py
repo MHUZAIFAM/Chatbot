@@ -333,29 +333,6 @@ class QueryEngine:
     # =====================================================
     # GET ITEM SECTION
     # =====================================================
-
-    def get_item_section(self, item_id):
-
-        row = self.dataset.df[self.dataset.df[self.dataset.id_col] == item_id]
-
-        if row.empty:
-            return None
-
-        row = row.iloc[0]
-
-        for sec in self.dataset.sections:
-
-            col = f"{sec}_answer"
-
-            if col in self.dataset.df.columns:
-
-                value = str(row[col]).lower()
-
-                if value in ["yes", "true", "1"]:
-                    return sec
-
-        return None
-
     def get_item_section(self, item_id):
 
         df = self.dataset.df
@@ -425,3 +402,33 @@ class QueryEngine:
                     reasons.append((sec, reason))
 
         return reasons
+
+    def items_in_section(self, section):
+
+        col = f"{section}_answer"
+
+        if col not in self.df.columns:
+            return []
+
+        data = self.df[
+            self.df[col].astype(str).str.lower() == "yes"
+            ]
+
+        results = []
+
+        for _, row in data.iterrows():
+
+            item_id = str(row[self.id_col])
+            rank = row[self.rank_col]
+
+            if rank is not None and str(rank) != "nan":
+                rank = int(rank)
+            else:
+                rank = None
+
+            results.append({
+                "Item ID": item_id,
+                "Rank": rank
+            })
+
+        return results
