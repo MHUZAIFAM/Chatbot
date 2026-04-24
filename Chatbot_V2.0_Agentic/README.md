@@ -2,7 +2,7 @@
 
 
 
-An \*\*Agentic AI-powered chatbot\*\* that allows users to interact with a structured news dataset through natural language.
+An **Agentic AI-powered chatbot** that allows users to interact with a structured news dataset through natural language.
 
 
 
@@ -23,23 +23,23 @@ The chatbot supports queries such as:
 
 
 
-\* Which section an item belongs to
+- Which section an item belongs to
 
-\* Why an item was not selected
+- Why an item was not selected
 
-\* Highest/lowest ranked items
+- Highest/lowest ranked items
 
-\* Ranked vs unranked items
+- Ranked vs unranked items
 
-\* Dataset statistics
+- Dataset statistics
 
-\* Section analytics
+- Section analytics
 
-\* Follow-up conversational questions
+- Follow-up conversational questions
 
 
 
-\---
+---
 
 
 
