@@ -94,51 +94,28 @@ This architecture allows the chatbot to combine:
 Chatbot\_V2.0\_Agentic
 
 │
-
 ├── Data
-
 │   └── Full\_Enriched\_Dataset.csv
-
 │
-
 ├── chatbot
-
 │   ├── agent.py              # Main chatbot agent
-
 │   ├── dataset.py            # Dataset loader \& schema detection
-
 │   ├── query\_engine.py       # Deterministic dataset queries
-
 │   ├── retriever.py          # Dataset retrieval layer
-
 │   ├── generator.py          # LLM answer generation
-
 │   ├── memory.py             # Conversation memory
-
 │   ├── planner.py            # Agent planning logic
-
 │   └── executer.py           # Execution logic
-
 │
-
 ├── schema
-
 │   └── models.py             # API request/response models
-
 │
-
 ├── src
-
 │   ├── main.py               # FastAPI backend
-
 │   └── ui.py                 # Streamlit UI
-
 │
-
 ├── .env
-
 ├── .gitignore
-
 └── README.md
 
 ```
