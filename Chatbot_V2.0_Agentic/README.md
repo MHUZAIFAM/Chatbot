@@ -535,7 +535,7 @@ Previous rule-based implementation is preserved in:
 
 ```
 
-Chatbot\_V1.0\_RuleBased
+Chatbot_V1.0_RuleBased
 
 ```
 
