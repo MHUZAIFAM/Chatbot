@@ -1,6 +1,9 @@
-# Agentic News Dataset Chatbot (V3.0)
-
 # Agentic News Dataset Chatbot
+
+![Python](https://img.shields.io/badge/Python-3.10+-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-API-green)
+![Streamlit](https://img.shields.io/badge/Streamlit-UI-red)
+![Version](https://img.shields.io/badge/version-v3.0-orange)
 
 ## Latest Release
 
@@ -17,11 +20,11 @@ structured news dataset through natural language.
 
 The system combines:
 
--   deterministic dataset analytics\
--   conversational memory\
--   LLM reasoning\
--   agent planning and execution\
--   structured dataset retrieval
+- deterministic dataset analytics  
+- conversational memory  
+- LLM reasoning  
+- agent planning and execution  
+- structured dataset retrieval  
 
 to answer analytical questions about **news articles, rankings,
 sections, and placement explanations**.
