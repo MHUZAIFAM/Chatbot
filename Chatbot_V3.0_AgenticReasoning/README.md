@@ -1,5 +1,17 @@
 # Agentic News Dataset Chatbot (V3.0)
 
+# Agentic News Dataset Chatbot
+
+## Latest Release
+
+**v3.0 — Reasoning Agent Architecture**
+
+Planner → Executor → Dataset reasoning → Conversational memory
+
+[View Release Notes](https://github.com/MHUZAIFAM/Chatbot/releases/tag/v3.0)
+
+---
+
 An **Agentic AI-powered chatbot** that allows users to interact with a
 structured news dataset through natural language.
 
