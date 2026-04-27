@@ -9,14 +9,25 @@ class Planner:
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel("models/gemini-pro-latest")
 
-    def plan(self, question):
+    def plan(self, question, context="", sections=""):
 
         prompt = f"""
 You are a query planner for a dataset analysis chatbot.
 
+Conversation Context:
+{context}
+
+User Question:
+{question}
+
 Your job is to convert the user question into a structured query plan.
 
 The dataset contains items grouped into sections and ranked.
+Valid dataset sections:
+{sections}
+
+Only use these sections if a section is required.
+Do NOT invent new section names.
 
 Sections depend on the dataset and should NOT be invented.
 If the user mentions a section, extract it exactly as written.
@@ -74,6 +85,9 @@ top_ranked_items
 average_rank_per_section
 → return the average rank of items within each section.
 
+count_ranked_items_per_section
+→ return the number of ranked items inside each section.
+
 unranked_items_per_section
 → return the number of unranked items within each section.
 
@@ -89,6 +103,10 @@ other_section_reasons
 unselected_reasons
 → return the dataset reasons explaining why the item was not selected for any section.
 
+item_details
+→ return full details about a specific item including:
+Item ID, Date, Page, Section, Rank and selection reason.
+
 Rules:
 
 - If the question asks to COUNT items → use a counting operation.
@@ -101,6 +119,16 @@ Rules:
 - If the user asks WHY an item was NOT placed in another section → use "other_section_reasons".
 - If the item was unselected and the user asks WHY → use "unselected_reasons".
 - If the question asks "how many ranked items in <section>" → use "count_ranked_items_in_section".
+- If the user asks for details, information, or description about an item → use "item_details".
+
+Reference Resolution Rules:
+
+- The conversation context may contain previously discussed items.
+- If the user uses pronouns like "it", "this item", "that item", or "there",
+  resolve the reference using the conversation context.
+- If the last discussed item ID appears in the context, reuse it.
+- If the user asks whether an item should be placed in another section,
+  use operation "other_section_reasons".
 
 Return ONLY valid JSON:
 
@@ -240,8 +268,22 @@ Answer:
  "item_id": "1168210045"
 }}
 
-User Question:
-{question}
+Question: How many ranked items per section?
+Answer:
+{{
+ "operation": "count_ranked_items_per_section",
+ "section": "",
+ "item_id": ""
+}}
+
+Question: Give details about an item
+Answer:
+{{
+ "operation": "item_details",
+ "section": "",
+ "item_id": "<item_id>"
+}}
+
 """
 
         response = self.model.generate_content(prompt)

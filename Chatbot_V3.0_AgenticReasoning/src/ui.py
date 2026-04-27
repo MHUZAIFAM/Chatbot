@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import time
 
-API_URL = "http://127.0.0.1:8000/ask"
+API_URL = "http://localhost:8001/ask"
 
 st.set_page_config(
     page_title="Agentic News Chatbot",
@@ -11,25 +11,38 @@ st.set_page_config(
 )
 
 # -----------------------
-# Custom CSS
+# Sidebar
+# -----------------------
+
+with st.sidebar:
+
+    st.title("⚙️ Controls")
+
+    if st.button("🔄 Reset Chat"):
+        st.session_state.messages = []
+        st.rerun()
+
+    st.markdown("---")
+
+    st.info("Agentic News Dataset Chatbot")
+
+# -----------------------
+# CSS
 # -----------------------
 
 st.markdown("""
 <style>
-
-.chat-container {
-    max-width: 800px;
-    margin: auto;
-}
 
 .user-msg {
     background-color: #2563eb;
     color: white;
     padding: 12px 16px;
     border-radius: 12px;
-    margin: 10px 0;
+    margin: 12px 0;
     width: fit-content;
     margin-left: auto;
+    max-width: 70%;
+    white-space: pre-line;
 }
 
 .bot-msg {
@@ -37,17 +50,15 @@ st.markdown("""
     color: white;
     padding: 12px 16px;
     border-radius: 12px;
-    margin: 10px 0;
+    margin: 12px 0;
     width: fit-content;
+    max-width: 70%;
+    white-space: pre-line;
 }
 
 .typing {
     color: #9ca3af;
     font-style: italic;
-}
-
-.reset-btn {
-    float: right;
 }
 
 </style>
@@ -61,15 +72,7 @@ st.title("🧠 Agentic News Chatbot")
 st.write("Ask questions about the dataset.")
 
 # -----------------------
-# Reset button
-# -----------------------
-
-if st.button("Reset Chat"):
-    st.session_state.messages = []
-    st.rerun()
-
-# -----------------------
-# Session state
+# Session State
 # -----------------------
 
 if "messages" not in st.session_state:
@@ -82,39 +85,42 @@ if "messages" not in st.session_state:
 for msg in st.session_state.messages:
 
     if msg["role"] == "user":
-
         st.markdown(
             f'<div class="user-msg">{msg["content"]}</div>',
             unsafe_allow_html=True
         )
 
     else:
-
         st.markdown(
             f'<div class="bot-msg">{msg["content"]}</div>',
             unsafe_allow_html=True
         )
 
 # -----------------------
-# Input
+# Chat Input
 # -----------------------
 
 prompt = st.chat_input("Ask a question about the dataset...")
 
 if prompt:
 
-    # show user message
+    # Save user message
     st.session_state.messages.append({
         "role": "user",
         "content": prompt
     })
 
-    st.markdown(
-        f'<div class="user-msg">{prompt}</div>',
-        unsafe_allow_html=True
-    )
+    # Force rerun so message appears immediately
+    st.rerun()
 
-    # typing indicator
+# -----------------------
+# Generate Bot Response
+# -----------------------
+
+if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+
+    question = st.session_state.messages[-1]["content"]
+
     thinking = st.empty()
     thinking.markdown(
         '<div class="bot-msg typing">Bot is thinking...</div>',
@@ -125,19 +131,18 @@ if prompt:
 
         response = requests.post(
             API_URL,
-            json={"question": prompt}
+            json={"question": question}
         )
 
         result = response.json()
 
         answer = result.get("answer", "No response received.")
-        answer = answer.replace(":", ": ").replace("_", " ").title()
 
     except Exception as e:
 
         answer = f"Error contacting API: {e}"
 
-    time.sleep(0.5)
+    time.sleep(0.4)
 
     thinking.empty()
 
@@ -146,7 +151,4 @@ if prompt:
         "content": answer
     })
 
-    st.markdown(
-        f'<div class="bot-msg">{answer}</div>',
-        unsafe_allow_html=True
-    )
+    st.rerun()

@@ -11,6 +11,22 @@ st.set_page_config(
 )
 
 # -----------------------
+# Sidebar (Controls)
+# -----------------------
+
+with st.sidebar:
+
+    st.title("⚙️ Controls")
+
+    if st.button("🔄 Reset Chat"):
+        st.session_state.messages = []
+        st.rerun()
+
+    st.markdown("---")
+
+    st.info("Agentic News Dataset Chatbot")
+
+# -----------------------
 # Custom CSS
 # -----------------------
 
@@ -27,9 +43,10 @@ st.markdown("""
     color: white;
     padding: 12px 16px;
     border-radius: 12px;
-    margin: 10px 0;
+    margin: 12px 0;
     width: fit-content;
     margin-left: auto;
+    max-width: 70%;
 }
 
 .bot-msg {
@@ -37,17 +54,14 @@ st.markdown("""
     color: white;
     padding: 12px 16px;
     border-radius: 12px;
-    margin: 10px 0;
+    margin: 12px 0;
     width: fit-content;
+    max-width: 70%;
 }
 
 .typing {
     color: #9ca3af;
     font-style: italic;
-}
-
-.reset-btn {
-    float: right;
 }
 
 </style>
@@ -61,14 +75,6 @@ st.title("🧠 Agentic News Chatbot")
 st.write("Ask questions about the dataset.")
 
 # -----------------------
-# Reset button
-# -----------------------
-
-if st.button("Reset Chat"):
-    st.session_state.messages = []
-    st.rerun()
-
-# -----------------------
 # Session state
 # -----------------------
 
@@ -76,34 +82,38 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # -----------------------
-# Chat Display
+# Chat Container
 # -----------------------
 
-for msg in st.session_state.messages:
+chat_container = st.container()
 
-    if msg["role"] == "user":
+with chat_container:
 
-        st.markdown(
-            f'<div class="user-msg">{msg["content"]}</div>',
-            unsafe_allow_html=True
-        )
+    for msg in st.session_state.messages:
 
-    else:
+        if msg["role"] == "user":
 
-        st.markdown(
-            f'<div class="bot-msg">{msg["content"]}</div>',
-            unsafe_allow_html=True
-        )
+            st.markdown(
+                f'<div class="user-msg">{msg["content"]}</div>',
+                unsafe_allow_html=True
+            )
+
+        else:
+
+            st.markdown(
+                f'<div class="bot-msg">{msg["content"]}</div>',
+                unsafe_allow_html=True
+            )
 
 # -----------------------
-# Input
+# Chat Input
 # -----------------------
 
 prompt = st.chat_input("Ask a question about the dataset...")
 
 if prompt:
 
-    # show user message
+    # Save user message
     st.session_state.messages.append({
         "role": "user",
         "content": prompt
@@ -114,7 +124,7 @@ if prompt:
         unsafe_allow_html=True
     )
 
-    # typing indicator
+    # Thinking indicator
     thinking = st.empty()
     thinking.markdown(
         '<div class="bot-msg typing">Bot is thinking...</div>',

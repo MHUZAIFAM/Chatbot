@@ -81,11 +81,7 @@ class ChatbotAgent:
     # =====================================================
 
     def format_section(self, sec):
-
-        return " ".join(
-            word.upper() if len(word) <= 2 else word.capitalize()
-            for word in sec.replace("_", " ").split()
-        )
+        return sec.replace("_", " ").title()
 
     # =====================================================
     # MAIN ASK FUNCTION
@@ -98,7 +94,13 @@ class ChatbotAgent:
 
 
         # 1️⃣ Planner decides what tool to use
-        plan = self.planner.plan(question)
+        sections = ", ".join(self.dataset.sections)
+
+        plan = self.planner.plan(
+            question,
+            context=self.memory.summary(),
+            sections=sections
+        )
         logging.info(f"PLANNER OUTPUT: {plan}")
 
         if not plan:
@@ -133,9 +135,7 @@ class ChatbotAgent:
         if item_id:
             self.memory.last_item = item_id
 
-        # =====================================
         # FOLLOW-UP WHY HANDLING
-        # =====================================
         q = question.lower().strip()
 
         if q.startswith("why"):
@@ -145,7 +145,13 @@ class ChatbotAgent:
                 item_id = self.memory.last_item
                 plan["item_id"] = item_id
 
-            if item_id:
+            # only override if planner didn't already choose a reason operation
+            if item_id and operation not in [
+                "selected_reason",
+                "other_section_reasons",
+                "unselected_reasons"
+            ]:
+
                 if self.query_engine.is_unselected(item_id):
                     plan["operation"] = "unselected_reasons"
                 else:
@@ -157,23 +163,75 @@ class ChatbotAgent:
         if operation and operation != "unknown":
 
             result = self.executor.execute(plan)
+            answer = None
 
             if result is not None:
 
                 if isinstance(result, dict):
 
-                    lines = []
+                    # -------------------------------------------------
+                    # ITEM DETAILS
+                    # -------------------------------------------------
+                    if operation == "item_details":
 
-                    for k, v in result.items():
+                        section = result.get("Section")
+                        rank = result.get("Rank")
+                        reason = result.get("Reason")
 
-                        section_name = self.format_section(k)
+                        section_name = (
+                            self.format_section(section)
+                            if section and section != "Unselected"
+                            else "Unselected"
+                        )
 
-                        if v is None:
-                            lines.append(f"{section_name}: No ranked items")
+                        rank_text = "Unranked" if rank in [None, "Unranked"] else rank
+
+                        # Clean date
+                        date = result.get("Date")
+                        if date:
+                            date = str(date).split("T")[0]
                         else:
-                            lines.append(f"{section_name}: {v}")
+                            date = "Unknown"
 
-                    answer = "\n".join(lines)
+                        # Clean page
+                        page = result.get("Page")
+                        if page in [None, "None"]:
+                            page = "Unknown"
+
+                        answer = (
+                            f"<b>Item ID:</b> {result['Item ID']}<br>"
+                            f"<b>Date:</b> {date}<br>"
+                            f"<b>Page:</b> {page}<br>"
+                            f"<b>Rank:</b> {rank_text}<br>"
+                            f"<b>Section:</b> {section_name}"
+                        )
+
+                        if section != "Unselected" and reason:
+                            answer += f"<br><b>Section Reason:</b> {reason}"
+
+                    # -------------------------------------------------
+                    # GENERIC DICT FORMAT
+                    # -------------------------------------------------
+                    else:
+
+                        lines = []
+
+                        for k, v in result.items():
+
+                            section_name = self.format_section(k)
+
+                            if v is None:
+                                lines.append(f"{section_name}: No ranked items")
+                            else:
+                                lines.append(f"• {section_name}: {v} items")
+
+                        answer = "\n".join(lines)
+
+                elif operation == "list_sections":
+
+                    sections = [f"• {self.format_section(s)}" for s in result]
+
+                    answer = "The sections present in this dataset are:\n" + "\n".join(sections)
 
                 elif isinstance(result, list):
 
@@ -193,28 +251,96 @@ class ChatbotAgent:
                                 sec_name = self.format_section(sec)
 
                                 formatted.append(
-                                    f"🔹 {sec_name}\n{reason}\n"
+                                    f"<b>{sec_name}:</b> {reason}"
                                 )
 
                             # CASE 2: ranked items
                             elif isinstance(item, dict) and "Item ID" in item:
-
+                                
                                 rank = item.get("Rank")
 
-                                if rank is None:
-                                    formatted.append(f"{item['Item ID']} | Unranked")
-                                else:
-                                    formatted.append(f"{item['Item ID']} | Rank {rank}")
+                                q_lower = question.lower()
 
+                                # ranked only
+                                if "ranked" in q_lower and rank is None:
+                                    continue
+
+                                # unranked only
+                                if "unranked" in q_lower and rank is not None:
+                                    continue
+
+                                if rank is None:
+                                    formatted.append(f"• Item {item['Item ID']} : Unranked")
+                                else:
+                                    formatted.append(f"• Item {item['Item ID']} : Rank {rank}")
                             else:
                                 formatted.append(str(item))
 
-                        answer = "Reasons:\n\n" + "\n".join(formatted)
+                        if operation in ["other_section_reasons", "unselected_reasons"]:
 
-                else:
-                    answer = str(result)
+                            answer = "Reasons:\n" + "\n".join(formatted)
+
+                        else:
+
+                            answer = "\n".join(formatted)
+
+                            if section:
+
+                                section_name = self.format_section(section)
+
+                                if "ranked" in question.lower():
+                                    header = f"Ranked items in {section_name}:\n"
+
+                                elif "unranked" in question.lower():
+                                    header = f"Unranked items in {section_name}:\n"
+
+                                else:
+                                    header = f"Items in {section_name}:\n"
+
+                                answer = header + answer
+
+                elif operation == "item_section":
+
+                    section_name = self.format_section(result)
+
+                    answer = f"Item {item_id} was placed in {section_name}."
+
+                elif isinstance(result, int):
+
+                    if operation == "count_items":
+
+                        answer = f"There are {result} items in the dataset."
+
+
+                    elif operation == "count_sections":
+
+                        answer = f"There are {result} sections in this dataset."
+
+
+                    elif operation == "count_ranked_items":
+
+                        answer = f"There are a total of {result} ranked items in this dataset."
+
+
+                    elif operation == "count_unranked_items":
+
+                        answer = f"There are {result} unranked items in this dataset."
+
+
+                    elif operation == "count_unselected_items":
+
+                        answer = f"There are {result} unselected items in this dataset."
+
+
+
+                    else:
+
+                        answer = str(result)
 
                 # ✅ IMPORTANT: stop execution here
+                if answer is None:
+                    answer = str(result)
+
                 self.memory.add(question, answer)
                 return answer
 

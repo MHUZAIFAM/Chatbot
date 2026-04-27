@@ -64,11 +64,17 @@ class Executor:
         if op == "items_in_section":
             return self.qe.items_in_section(section)
 
+        if op == "item_details":
+            return self.qe.item_details(item_id)
+
+        if op == "count_ranked_items_per_section":
+            return self.qe.count_ranked_items_per_section()
+
         if op == "selected_reason":
             return self.qe.selected_reason(item_id)
 
         if op == "other_section_reasons":
-            return self.qe.other_section_reasons(item_id)
+            return self.qe.other_section_reasons(item_id, section)
 
         if op == "count_ranked_items_in_section":
             return self.qe.count_ranked_items_in_section(section)

@@ -1,3 +1,5 @@
+import pandas as pd
+
 class QueryEngine:
 
     def __init__(self, dataset_manager):
@@ -176,7 +178,7 @@ class QueryEngine:
 
         return None
 
-    def other_section_reasons(self, item_id):
+    def other_section_reasons(self, item_id, section=None):
 
         row = self.df[self.df[self.id_col].astype(str) == str(item_id)]
 
@@ -185,13 +187,18 @@ class QueryEngine:
 
         row = row.iloc[0]
 
-        selected = self.item_section(item_id)
+        selected_section = self.item_section(item_id)
 
         reasons = []
 
         for sec in self.sections:
 
-            if sec == selected:
+            # skip the section where the item was actually placed
+            if sec == selected_section:
+                continue
+
+            # if planner requested a specific section, filter
+            if section and sec != section:
                 continue
 
             col = f"{sec}_reason"
@@ -204,7 +211,6 @@ class QueryEngine:
                     reasons.append((sec, reason))
 
         return reasons
-
 
     def count_ranked_items_in_section(self, section):
 
@@ -533,14 +539,17 @@ class QueryEngine:
             self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
         ]
 
-        # keep only ranked items
-        data = data[data[self.rank_col].notna()]
-
         results = []
 
         for _, row in data.iterrows():
+
             item_id = str(row[self.id_col])
-            rank = int(row[self.rank_col])
+            rank = row[self.rank_col]
+
+            if pd.isna(rank):
+                rank = None
+            else:
+                rank = int(rank)
 
             results.append({
                 "Item ID": item_id,
@@ -548,3 +557,56 @@ class QueryEngine:
             })
 
         return results
+
+    def count_ranked_items_per_section(self):
+
+        counts = {}
+
+        for sec in self.sections:
+
+            col = f"{sec}_answer"
+
+            if col not in self.df.columns:
+                counts[sec] = 0
+                continue
+
+            section_df = self.df[
+                (self.df[col].astype(str).str.lower() == "yes") &
+                (self.df[self.rank_col].notna())
+                ]
+
+            counts[sec] = len(section_df)
+
+        return counts
+
+    def item_details(self, item_id):
+
+        row = self.df[
+            self.df[self.id_col].astype(str) == str(item_id)
+            ]
+
+        if row.empty:
+            return None
+
+        row = row.iloc[0]
+
+        section = self.item_section(item_id)
+        rank = self.item_rank(item_id)
+
+        reason = None
+
+        if section and section != "Unselected":
+
+            col = f"{section}_reason"
+
+            if col in self.df.columns:
+                reason = row[col]
+
+        return {
+            "Item ID": str(item_id),
+            "Date": row.get("Date"),
+            "Page": row.get("Page"),
+            "Rank": rank,
+            "Section": section,
+            "Reason": reason
+        }
