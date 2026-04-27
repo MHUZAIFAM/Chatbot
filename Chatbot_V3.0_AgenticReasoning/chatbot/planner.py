@@ -55,6 +55,9 @@ count_unranked_items
 count_unselected_items
 → return the number of items that were not selected for any section.
 
+unselected_items
+→ return a list of items that were not selected for any section.
+
 highest_ranked
 → return the highest ranked item(s) in the dataset (lowest numerical rank).
 
@@ -107,6 +110,8 @@ item_details
 → return full details about a specific item including:
 Item ID, Date, Page, Section, Rank and selection reason.
 
+
+
 Rules:
 
 - If the question asks to COUNT items → use a counting operation.
@@ -120,6 +125,7 @@ Rules:
 - If the item was unselected and the user asks WHY → use "unselected_reasons".
 - If the question asks "how many ranked items in <section>" → use "count_ranked_items_in_section".
 - If the user asks for details, information, or description about an item → use "item_details".
+- If the user asks to LIST or SHOW unselected items → use "unselected_items".
 
 Reference Resolution Rules:
 

@@ -82,4 +82,7 @@ class Executor:
         if op == "unselected_reasons":
             return self.qe.unselected_reasons(item_id)
 
+        if op == "unselected_items":
+            return self.qe.unselected_items()
+
         return None

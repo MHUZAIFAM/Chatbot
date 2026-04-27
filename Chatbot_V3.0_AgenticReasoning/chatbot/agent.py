@@ -251,7 +251,7 @@ class ChatbotAgent:
                                 sec_name = self.format_section(sec)
 
                                 formatted.append(
-                                    f"<b>{sec_name}:</b> {reason}"
+                                    f"• <span style='font-weight:600;font-size:15px'>{sec_name}</span>: {reason}"
                                 )
 
                             # CASE 2: ranked items
@@ -278,7 +278,7 @@ class ChatbotAgent:
 
                         if operation in ["other_section_reasons", "unselected_reasons"]:
 
-                            answer = "Reasons:\n" + "\n".join(formatted)
+                            answer = "<b>Reasons</b><br><br>" + "<br><br>".join(formatted)
 
                         else:
 
@@ -298,6 +298,13 @@ class ChatbotAgent:
                                     header = f"Items in {section_name}:\n"
 
                                 answer = header + answer
+
+                elif operation == "item_rank":
+
+                    if result == "Unranked":
+                        answer = f"Item {item_id} was unranked."
+                    else:
+                        answer = f"Item {item_id} was ranked {result}."
 
                 elif operation == "item_section":
 

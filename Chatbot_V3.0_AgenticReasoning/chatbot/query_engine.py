@@ -389,7 +389,7 @@ class QueryEngine:
 
         row = self.df[
             self.df[self.id_col].astype(str) == str(item_id)
-        ]
+            ]
 
         if row.empty:
             return None
@@ -398,11 +398,10 @@ class QueryEngine:
 
         rank = row.get(self.rank_col)
 
-        if rank is None:
+        if pd.isna(rank):
             return "Unranked"
 
         return int(rank)
-
 
     # =====================================================
     # ITEM SECTION LOOKUP
@@ -610,3 +609,44 @@ class QueryEngine:
             "Section": section,
             "Reason": reason
         }
+
+    def unselected_items(self, limit=10):
+
+        selected_mask = None
+
+        for sec in self.sections:
+
+            col = f"{sec}_answer"
+
+            if col in self.df.columns:
+
+                mask = self.df[col].astype(str).str.lower() == "yes"
+
+                if selected_mask is None:
+                    selected_mask = mask
+                else:
+                    selected_mask = selected_mask | mask
+
+        if selected_mask is None:
+            unselected = self.df
+        else:
+            unselected = self.df[~selected_mask]
+
+        results = []
+
+        for _, row in unselected.head(limit).iterrows():
+
+            item_id = str(row[self.id_col])
+            rank = row[self.rank_col]
+
+            if pd.isna(rank):
+                rank = None
+            else:
+                rank = int(rank)
+
+            results.append({
+                "Item ID": item_id,
+                "Rank": rank
+            })
+
+        return results
