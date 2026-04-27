@@ -11,6 +11,19 @@ st.set_page_config(
 )
 
 # -----------------------
+# Session State
+# -----------------------
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+if "titles" not in st.session_state:
+    st.session_state.titles = []
+
+# -----------------------
 # Sidebar
 # -----------------------
 
@@ -19,8 +32,41 @@ with st.sidebar:
     st.title("⚙️ Controls")
 
     if st.button("🔄 Reset Chat"):
+
+        if st.session_state.messages:
+
+            first_question = None
+
+            for m in st.session_state.messages:
+                if m["role"] == "user":
+                    first_question = m["content"]
+                    break
+
+            if first_question:
+                title = first_question[:40] + ("..." if len(first_question) > 40 else "")
+            else:
+                title = "New Chat"
+
+            st.session_state.history.append(st.session_state.messages.copy())
+            st.session_state.titles.append(title)
+
         st.session_state.messages = []
+
         st.rerun()
+
+    st.markdown("---")
+
+    st.markdown("### 💬 Previous Chats")
+
+    for i in range(len(st.session_state.history) - 1, -1, -1):
+
+        title = st.session_state.titles[i]
+
+        if st.button(f"📂 {title}", key=f"chat_{i}"):
+
+            st.session_state.messages = st.session_state.history[i]
+
+            st.rerun()
 
     st.markdown("---")
 
@@ -38,12 +84,11 @@ st.markdown("""
     color: white;
     padding: 12px 16px;
     border-radius: 12px;
-    margin: 12px 0;
-    width: fit-content;
-    margin-left: auto;
+    margin: 10px 0 10px auto;
     max-width: 70%;
-    white-space: normal;
+    width: fit-content;
     line-height: 1.6;
+    white-space: pre-line;
 }
 
 .bot-msg {
@@ -51,13 +96,12 @@ st.markdown("""
     color: white;
     padding: 12px 16px;
     border-radius: 12px;
-    margin: 12px 0;
-    width: fit-content;
+    margin: 10px auto 10px 0;
     max-width: 70%;
-    white-space: normal;
+    width: fit-content;
     line-height: 1.6;
+    white-space: pre-line;
 }
-
 .typing {
     color: #9ca3af;
     font-style: italic;
@@ -72,13 +116,6 @@ st.markdown("""
 
 st.title("🧠 Agentic News Chatbot")
 st.write("Ask questions about the dataset.")
-
-# -----------------------
-# Session State
-# -----------------------
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
 
 # -----------------------
 # Chat Display
@@ -106,13 +143,11 @@ prompt = st.chat_input("Ask a question about the dataset...")
 
 if prompt:
 
-    # Save user message
     st.session_state.messages.append({
         "role": "user",
         "content": prompt
     })
 
-    # Force rerun so message appears immediately
     st.rerun()
 
 # -----------------------
@@ -124,16 +159,23 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
     question = st.session_state.messages[-1]["content"]
 
     thinking = st.empty()
-    thinking.markdown(
-        '<div class="bot-msg typing">Bot is thinking...</div>',
-        unsafe_allow_html=True
-    )
+
+    # Thinking animation
+    dots = 0
+    for _ in range(10):
+        thinking.markdown(
+            f'<div class="bot-msg typing">Bot is thinking{"." * (dots % 4)}</div>',
+            unsafe_allow_html=True
+        )
+        dots += 1
+        time.sleep(0.2)
 
     try:
 
         response = requests.post(
             API_URL,
-            json={"question": question}
+            json={"question": question},
+            timeout=60
         )
 
         result = response.json()
@@ -144,13 +186,39 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
 
         answer = f"Error contacting API: {e}"
 
-    time.sleep(0.4)
-
     thinking.empty()
+
+    # Streaming typing effect
+    streamed = ""
+    placeholder = st.empty()
+
+    for word in answer.split():
+
+        streamed += word + " "
+
+        placeholder.markdown(
+            f'<div class="bot-msg">{streamed}</div>',
+            unsafe_allow_html=True
+        )
+
+        time.sleep(0.03)
 
     st.session_state.messages.append({
         "role": "assistant",
-        "content": answer
+        "content": streamed
     })
 
     st.rerun()
+
+# -----------------------
+# Auto Scroll
+# -----------------------
+
+st.markdown(
+    """
+    <script>
+        window.scrollTo(0, document.body.scrollHeight);
+    </script>
+    """,
+    unsafe_allow_html=True
+)

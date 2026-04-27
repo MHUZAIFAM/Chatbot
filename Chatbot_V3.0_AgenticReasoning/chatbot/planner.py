@@ -110,6 +110,9 @@ item_details
 → return full details about a specific item including:
 Item ID, Date, Page, Section, Rank and selection reason.
 
+count_items_in_section
+→ return the number of items in a specific section.
+
 
 
 Rules:
@@ -121,11 +124,12 @@ Rules:
 - If the question mentions a section → fill "section".
 - If no operation matches → return "unknown".
 - If the user asks WHY an item was placed in a section → use "selected_reason".
-- If the user asks WHY an item was NOT placed in another section → use "other_section_reasons".
+- If the user asks why an item was not placed in other sections or asks why it was not placed elsewhere → use "other_section_reasons".
 - If the item was unselected and the user asks WHY → use "unselected_reasons".
 - If the question asks "how many ranked items in <section>" → use "count_ranked_items_in_section".
 - If the user asks for details, information, or description about an item → use "item_details".
 - If the user asks to LIST or SHOW unselected items → use "unselected_items".
+- If the question asks "How many items in <section>" → use count_items_in_section
 
 Reference Resolution Rules:
 

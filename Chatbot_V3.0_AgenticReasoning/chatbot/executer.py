@@ -85,4 +85,7 @@ class Executor:
         if op == "unselected_items":
             return self.qe.unselected_items()
 
+        if op == "count_items_in_section":
+            return self.qe.count_items_in_section(section)
+
         return None

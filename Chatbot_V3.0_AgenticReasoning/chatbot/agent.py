@@ -145,8 +145,12 @@ class ChatbotAgent:
                 item_id = self.memory.last_item
                 plan["item_id"] = item_id
 
-            # only override if planner didn't already choose a reason operation
-            if item_id and operation not in [
+            # detect "other sections" questions
+            if "other section" in q or "other sections" in q or "elsewhere" in q:
+                plan["operation"] = "other_section_reasons"
+                plan["section"] = None
+
+            elif item_id and operation not in [
                 "selected_reason",
                 "other_section_reasons",
                 "unselected_reasons"
@@ -225,13 +229,13 @@ class ChatbotAgent:
                             else:
                                 lines.append(f"• {section_name}: {v} items")
 
-                        answer = "\n".join(lines)
+                        answer = "<br>".join(lines)
 
                 elif operation == "list_sections":
 
                     sections = [f"• {self.format_section(s)}" for s in result]
 
-                    answer = "The sections present in this dataset are:\n" + "\n".join(sections)
+                    answer = "The sections present in this dataset are:<br><br>" + "<br>".join(sections)
 
                 elif isinstance(result, list):
 
@@ -251,7 +255,7 @@ class ChatbotAgent:
                                 sec_name = self.format_section(sec)
 
                                 formatted.append(
-                                    f"• <b>{sec_name}</b><br>{reason}"
+                                    f"• <b>{sec_name}</b>:<br>{reason}"
                                 )
 
                             # CASE 2: ranked items
@@ -282,11 +286,11 @@ class ChatbotAgent:
 
                         if operation in ["other_section_reasons", "unselected_reasons"]:
 
-                            answer = "<b>Reasons</b><br><br>" + "<br><br>".join(formatted)
+                            answer = "<b>Reasons</b><br><br>" + "<br><br>".join(formatted) + "<br>"
 
                         else:
 
-                            answer = "\n".join(formatted)
+                            answer = "<br>".join(formatted)
 
                             if section:
 
@@ -342,6 +346,19 @@ class ChatbotAgent:
 
                         answer = f"There are {result} unselected items in this dataset."
 
+
+                    elif operation == "count_items_in_section":
+
+                        section_name = self.format_section(section)
+
+                        answer = f"There are {result} items in {section_name}."
+
+
+                    elif operation == "count_ranked_items_in_section":
+
+                        section_name = self.format_section(section)
+
+                        answer = f"There are {result} ranked items in {section_name}."
 
 
                     else:
