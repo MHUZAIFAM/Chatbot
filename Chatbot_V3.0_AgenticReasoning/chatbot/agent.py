@@ -251,7 +251,7 @@ class ChatbotAgent:
                                 sec_name = self.format_section(sec)
 
                                 formatted.append(
-                                    f"• <span style='font-weight:600;font-size:15px'>{sec_name}</span>: {reason}"
+                                    f"• <b>{sec_name}</b><br>{reason}"
                                 )
 
                             # CASE 2: ranked items
@@ -270,9 +270,13 @@ class ChatbotAgent:
                                     continue
 
                                 if rank is None:
-                                    formatted.append(f"• Item {item['Item ID']} : Unranked")
+                                    formatted.append(
+                                        f"• <b>Item {item['Item ID']}</b> — Unranked"
+                                    )
                                 else:
-                                    formatted.append(f"• Item {item['Item ID']} : Rank {rank}")
+                                    formatted.append(
+                                        f"• <b>Item {item['Item ID']}</b> — Rank {rank}"
+                                    )
                             else:
                                 formatted.append(str(item))
 
@@ -289,13 +293,13 @@ class ChatbotAgent:
                                 section_name = self.format_section(section)
 
                                 if "ranked" in question.lower():
-                                    header = f"Ranked items in {section_name}:\n"
+                                    header = f"<b>Ranked items in {section_name}</b><br><br>"
 
                                 elif "unranked" in question.lower():
-                                    header = f"Unranked items in {section_name}:\n"
+                                    header = f"<b>Unranked items in {section_name}</b><br><br>"
 
                                 else:
-                                    header = f"Items in {section_name}:\n"
+                                    header = f"<b>Items in {section_name}</b><br><br>"
 
                                 answer = header + answer
 

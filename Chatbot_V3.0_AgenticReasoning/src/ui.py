@@ -42,7 +42,8 @@ st.markdown("""
     width: fit-content;
     margin-left: auto;
     max-width: 70%;
-    white-space: pre-line;
+    white-space: normal;
+    line-height: 1.6;
 }
 
 .bot-msg {
@@ -53,7 +54,8 @@ st.markdown("""
     margin: 12px 0;
     width: fit-content;
     max-width: 70%;
-    white-space: pre-line;
+    white-space: normal;
+    line-height: 1.6;
 }
 
 .typing {
