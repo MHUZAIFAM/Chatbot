@@ -51,31 +51,30 @@ Modules:
 # Project Structure
 
 Chatbot_V3.0_ReasoningAgent
-
-Data\
-Full_Enriched_Dataset.csv
-
-chatbot\
-agent.py\
-dataset.py\
-query_engine.py\
-retriever.py\
-generator.py\
-memory.py\
-planner.py\
-executer.py
-
-schema\
-models.py
-
-src\
-main.py\
-ui.py
-
-.env\
-.gitignore\
-README.md
-
+│
+├── Data
+│   └── Full_Enriched_Dataset.csv
+│
+├── chatbot
+│   ├── agent.py
+│   ├── dataset.py
+│   ├── query_engine.py
+│   ├── retriever.py
+│   ├── generator.py
+│   ├── memory.py
+│   ├── planner.py
+│   └── executer.py
+│
+├── schema
+│   └── models.py
+│
+├── src
+│   ├── main.py
+│   └── ui.py
+│
+├── .env
+├── .gitignore
+└── README.md
 ------------------------------------------------------------------------
 
 # Key Features
