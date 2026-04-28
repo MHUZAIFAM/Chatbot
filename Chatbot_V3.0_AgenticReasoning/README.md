@@ -50,6 +50,7 @@ Modules:
 
 # Project Structure
 
+```
 Chatbot_V3.0_ReasoningAgent
 │
 ├── Data
@@ -75,6 +76,8 @@ Chatbot_V3.0_ReasoningAgent
 ├── .env
 ├── .gitignore
 └── README.md
+```
+
 ------------------------------------------------------------------------
 
 # Key Features
