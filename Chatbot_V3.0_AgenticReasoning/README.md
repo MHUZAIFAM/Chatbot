@@ -52,10 +52,10 @@ Modules:
 
 Chatbot_V3.0_ReasoningAgent
 
-Data/\
+Data\
 Full_Enriched_Dataset.csv
 
-chatbot/\
+chatbot\
 agent.py\
 dataset.py\
 query_engine.py\
@@ -65,10 +65,10 @@ memory.py\
 planner.py\
 executer.py
 
-schema/\
+schema\
 models.py
 
-src/\
+src\
 main.py\
 ui.py
 
