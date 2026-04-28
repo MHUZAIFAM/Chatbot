@@ -1,16 +1,15 @@
 import json
-import google.generativeai as genai
+from google import genai
 
 
 class AnswerGenerator:
 
     def __init__(self, api_key):
 
-        genai.configure(api_key=api_key)
+        self.client = genai.Client(api_key=api_key)
 
-        self.model = genai.GenerativeModel(
-            "models/gemini-pro-latest"
-        )
+        self.model = "gemini-2.5-flash"
+
 
     # =====================================================
     # GENERATE ANSWER
@@ -44,21 +43,18 @@ Return JSON ONLY in this format:
 {{ "answer": "" }}
 """
 
-        response = self.model.generate_content(prompt)
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt
+        )
 
         text = response.text.strip()
 
-        # Remove markdown code blocks if Gemini adds them
         if text.startswith("```"):
             text = text.replace("```json", "").replace("```", "").strip()
 
-        # Try parsing JSON
         try:
             return json.loads(text)
 
         except Exception:
-
-            # fallback if Gemini returns plain text
-            return {
-                "answer": text
-            }
+            return {"answer": text}

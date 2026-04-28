@@ -175,7 +175,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
         response = requests.post(
             API_URL,
             json={"question": question},
-            timeout=60
+            timeout=180
         )
 
         result = response.json()

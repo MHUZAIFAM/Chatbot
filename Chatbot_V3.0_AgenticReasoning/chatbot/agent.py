@@ -106,9 +106,36 @@ class ChatbotAgent:
         if not plan:
             plan = {"operation": "unknown", "section": None, "item_id": None}
 
+        # -------------------------------------------------
+        # FOLLOW-UP OPERATION RECOVERY
+        # -------------------------------------------------
+
+        if plan.get("operation") == "unknown" and hasattr(self.memory, "last_operation"):
+
+            q = question.lower()
+
+            # detect short follow-ups like "what about hospitals?"
+            if "what about" in q or "and" in q or "how about" in q:
+                plan["operation"] = self.memory.last_operation
+
         operation = plan.get("operation")
         section = plan.get("section")
         item_id = plan.get("item_id")
+
+        # -------------------------------------------------
+        # FIELD RECOVERY (planner sometimes misses field)
+        # -------------------------------------------------
+
+        if operation == "item_field" and not plan.get("field"):
+
+            q = question.lower()
+
+            from .query_engine import FIELD_MAP
+
+            for key in FIELD_MAP:
+                if key in q or key.replace(" ", "") in q:
+                    plan["field"] = key
+                    break
 
         # 2️⃣ fallback extraction if planner missed it
         if not section:
@@ -131,9 +158,14 @@ class ChatbotAgent:
         # store last section in memory
         if section:
             self.memory.last_section = section
+
         # store last item
         if item_id:
             self.memory.last_item = item_id
+
+        # store last operation
+        if operation:
+            self.memory.last_operation = operation
 
         # FOLLOW-UP WHY HANDLING
         q = question.lower().strip()
@@ -171,7 +203,38 @@ class ChatbotAgent:
 
             if result is not None:
 
-                if isinstance(result, dict):
+                # -------------------------------------------------
+                # ITEM FIELD (headline, score, outlet, etc)
+                # -------------------------------------------------
+                if operation == "item_field":
+
+                    field = plan.get("field")
+
+                    if result is None:
+                        answer = f"The requested field '{field}' was not found in the dataset."
+
+                    else:
+
+                        if field == "Is_Lead":
+
+                            if str(result).lower() in ["true", "1", "yes"]:
+                                answer = f"Yes, Item {item_id} is a leading item."
+                            else:
+                                answer = f"No, Item {item_id} is not a leading item."
+
+                        elif field == "story_id":
+
+                            readable = str(result).replace("_", " ")
+                            answer = f"The Story ID of Item {item_id} is <b>{readable}</b>."
+
+                        else:
+                            label = field.replace("_", " ").replace("URL", "URL").title()
+                            answer = f"<b>Item {item_id}</b> — {label}: {result}"
+
+                # -------------------------------------------------
+                # DICTIONARY RESULTS
+                # -------------------------------------------------
+                elif isinstance(result, dict):
 
                     # -------------------------------------------------
                     # ITEM DETAILS
@@ -202,13 +265,37 @@ class ChatbotAgent:
                         if page in [None, "None"]:
                             page = "Unknown"
 
-                        answer = (
-                            f"<b>Item ID:</b> {result['Item ID']}<br>"
-                            f"<b>Date:</b> {date}<br>"
-                            f"<b>Page:</b> {page}<br>"
-                            f"<b>Rank:</b> {rank_text}<br>"
-                            f"<b>Section:</b> {section_name}"
-                        )
+                        lines = []
+
+                        def add(label, value):
+
+                            if value is None:
+                                return
+
+                            v = str(value).strip().lower()
+
+                            if v in ["nan", "none", "unknown", "not available in the dataset"]:
+                                return
+
+                            lines.append(f"<b>{label}:</b> {value}")
+
+                        add("Item ID", result.get("Item ID"))
+                        add("Headline", result.get("Headline"))
+                        add("Media Outlet", result.get("Media Outlet"))
+                        add("Date", date)
+                        wc = result.get("Word Count")
+                        if wc:
+                            try:
+                                wc = int(float(wc))
+                            except:
+                                pass
+                        add("Word Count", wc)
+                        add("Page", page)
+                        add("Rank", rank_text)
+                        add("Score", result.get("Score"))
+                        add("Section", section_name)
+
+                        answer = "<br>".join(lines)
 
                         if section != "Unselected" and reason:
                             answer += f"<br><b>Section Reason:</b> {reason}"

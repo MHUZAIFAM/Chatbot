@@ -1,5 +1,93 @@
 import pandas as pd
 
+FIELD_MAP = {
+
+    # -------------------------
+    # Headline / Title
+    # -------------------------
+    "headline": "Headline",
+    "title": "Headline",
+    "article title": "Headline",
+
+    # -------------------------
+    # URL / Links
+    # -------------------------
+    "url": "WebURL",
+    "web url": "WebURL",
+    "link": "WebURL",
+    "article link": "WebURL",
+    "website": "WebURL",
+    "webpage": "WebURL",
+
+    # -------------------------
+    # Date / Page
+    # -------------------------
+    "date": "Date",
+    "publication date": "Date",
+    "page": "Page Number",
+    "page number": "Page Number",
+
+    # -------------------------
+    # Ranking
+    # -------------------------
+    "rank": "Rank",
+    "ranking": "Rank",
+    "score": "Score",
+
+    # -------------------------
+    # Media Metadata
+    # -------------------------
+    "media outlet": "Media Outlet",
+    "outlet": "Media Outlet",
+    "publisher": "Media Outlet",
+    "publication": "Media Outlet",
+    "source": "Media Outlet",
+
+    "media type": "Media Item Type",
+    "item type": "Media Item Type",
+
+    # -------------------------
+    # Article Content
+    # -------------------------
+    "full text": "Full Text",
+    "article text": "Full Text",
+    "text": "Full Text",
+
+    "summary": "Summary",
+    "article summary": "Summary",
+
+    "word count": "wordCount",
+    "wordcount": "wordCount",
+    "words": "wordCount",
+
+    # -------------------------
+    # Story Grouping
+    # -------------------------
+    "story id": "story_id",
+    "story title": "story_title",
+    "story summary": "story_summary",
+
+    # -------------------------
+    # Clustering
+    # -------------------------
+    "sub cluster id": "Sub_Cluster_ID",
+    "sub cluster title": "Sub_Cluster_Title",
+
+    # -------------------------
+    # Ordering
+    # -------------------------
+    "ordering section": "Ordering_Section",
+    "ordering reason": "Ordering_Reason",
+
+    # -------------------------
+    # Lead Article
+    # -------------------------
+    "is lead": "Is_Lead",
+    "lead article": "Is_Lead",
+    "leading item": "Is_Lead",
+    "lead item": "Is_Lead",
+}
+
 class QueryEngine:
 
     def __init__(self, dataset_manager):
@@ -44,7 +132,7 @@ class QueryEngine:
             return None
 
         section_df = self.df[
-            self.df[col].astype(str).str.lower() == "yes"
+            self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
         ]
 
         return len(section_df)
@@ -62,7 +150,7 @@ class QueryEngine:
 
                 count = len(
                     self.df[
-                        self.df[col].astype(str).str.lower() == "yes"
+                        self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
                     ]
                 )
 
@@ -119,7 +207,7 @@ class QueryEngine:
                 continue
 
             section_df = self.df[
-                (self.df[col].astype(str).str.lower() == "yes") &
+                self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"]) &
                 (self.df[self.rank_col].notna())
                 ]
 
@@ -220,7 +308,7 @@ class QueryEngine:
             return None
 
         section_df = self.df[
-            (self.df[col].astype(str).str.lower() == "yes") &
+            self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"]) &
             (self.df[self.rank_col].notna())
         ]
 
@@ -241,7 +329,7 @@ class QueryEngine:
 
             if col in self.df.columns:
 
-                mask = self.df[col].astype(str).str.lower() == "yes"
+                mask = self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
 
                 if selected_mask is None:
                     selected_mask = mask
@@ -319,7 +407,7 @@ class QueryEngine:
             return None
 
         section_df = self.df[
-            (self.df[col].astype(str).str.lower() == "yes") &
+            self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"]) &
             (self.df[self.rank_col].notna())
         ]
 
@@ -347,7 +435,7 @@ class QueryEngine:
             return None
 
         section_df = self.df[
-            (self.df[col].astype(str).str.lower() == "yes") &
+            self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"]) &
             (self.df[self.rank_col].notna())
         ]
 
@@ -374,7 +462,7 @@ class QueryEngine:
             return 0
 
         data = self.df[
-            (self.df[col].astype(str).str.lower() == "yes") &
+            self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"]) &
             (self.df[self.rank_col].isna())
             ]
 
@@ -426,7 +514,7 @@ class QueryEngine:
 
                 val = str(row[col]).strip().lower()
 
-                if val == "yes":
+                if val in ["yes", "true", "1"]:
                     return sec
 
         return "Unselected"
@@ -570,7 +658,7 @@ class QueryEngine:
                 continue
 
             section_df = self.df[
-                (self.df[col].astype(str).str.lower() == "yes") &
+                self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"]) &
                 (self.df[self.rank_col].notna())
                 ]
 
@@ -603,9 +691,13 @@ class QueryEngine:
 
         return {
             "Item ID": str(item_id),
+            "Headline": row.get("Headline"),
             "Date": row.get("Date"),
-            "Page": row.get("Page"),
+            "Media Outlet": row.get("Media Outlet"),
+            "Word Count": row.get("wordCount"),
+            "Page": row.get("Page Number"),
             "Rank": rank,
+            "Score": row.get("Score"),
             "Section": section,
             "Reason": reason
         }
@@ -620,7 +712,7 @@ class QueryEngine:
 
             if col in self.df.columns:
 
-                mask = self.df[col].astype(str).str.lower() == "yes"
+                mask = self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
 
                 if selected_mask is None:
                     selected_mask = mask
@@ -650,3 +742,39 @@ class QueryEngine:
             })
 
         return results
+
+    def item_field(self, item_id, field):
+
+        if not field:
+            return None
+
+        field = field.lower().replace("_", " ").strip()
+
+        column = FIELD_MAP.get(field)
+
+        if column is None:
+            return None
+
+        # fallback search
+        if column not in self.df.columns:
+            for col in self.df.columns:
+                if column.lower() in col.lower():
+                    column = col
+                    break
+
+        if column is None:
+            return None
+
+        row = self.df[
+            self.df[self.id_col].astype(str) == str(item_id)
+            ]
+
+        if row.empty:
+            return None
+
+        value = row.iloc[0][column]
+
+        if pd.isna(value):
+            return "Not available in the dataset"
+
+        return value

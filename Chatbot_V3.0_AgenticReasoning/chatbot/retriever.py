@@ -34,7 +34,11 @@ class DataRetriever:
             self.score_col,
             self.ordering_section_col,
             self.ordering_reason_col,
-            self.ordering_relevant_text_col
+            self.ordering_relevant_text_col,
+            self.dataset.headline_col,
+            self.dataset.media_outlet_col,
+            self.dataset.summary_col,
+            self.dataset.full_text_col,
         ]
 
         cols += self.reason_cols
@@ -53,7 +57,7 @@ class DataRetriever:
     # MAIN RETRIEVAL FUNCTION
     # =====================================================
 
-    def retrieve(self, item_id=None, section=None, limit=True, max_rows=1000):
+    def retrieve(self, item_id=None, section=None, limit=True, max_rows=500):
 
         data = self.df.copy()
 
@@ -74,7 +78,7 @@ class DataRetriever:
 
             if col in data.columns:
                 data = data[
-                    data[col].astype(str).str.lower() == "yes"
+                    data[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
                 ]
 
         # --------------------------------

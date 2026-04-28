@@ -2,11 +2,13 @@ class ConversationMemory:
 
     def __init__(self, limit=6):
 
-        # store conversation history
         self.history = []
-
-        # maximum number of interactions to keep
         self.limit = limit
+
+        # context tracking
+        self.last_item = None
+        self.last_section = None
+        self.last_operation = None
 
 
     # ---------------------------------------------------

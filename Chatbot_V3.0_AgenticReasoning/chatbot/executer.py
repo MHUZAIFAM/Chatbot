@@ -88,4 +88,7 @@ class Executor:
         if op == "count_items_in_section":
             return self.qe.count_items_in_section(section)
 
+        if op == "item_field":
+            return self.qe.item_field(item_id, plan.get("field"))
+
         return None

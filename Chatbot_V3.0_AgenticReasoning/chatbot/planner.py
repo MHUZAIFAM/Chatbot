@@ -7,7 +7,7 @@ class Planner:
     def __init__(self, api_key):
 
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("models/gemini-pro-latest")
+        self.model = genai.GenerativeModel("gemini-2.5-flash")
 
     def plan(self, question, context="", sections=""):
 
@@ -113,6 +113,8 @@ Item ID, Date, Page, Section, Rank and selection reason.
 count_items_in_section
 → return the number of items in a specific section.
 
+item_field
+→ return a specific dataset field for an item
 
 
 Rules:
@@ -130,6 +132,8 @@ Rules:
 - If the user asks for details, information, or description about an item → use "item_details".
 - If the user asks to LIST or SHOW unselected items → use "unselected_items".
 - If the question asks "How many items in <section>" → use count_items_in_section
+- If the user asks about a specific property of an item (headline, score, outlet, summary, word count, page, etc) use operation "item_field".
+- If the question asks whether an item is leading, lead article, or Is_Lead → use operation "item_field".
 
 Reference Resolution Rules:
 
@@ -145,154 +149,10 @@ Return ONLY valid JSON:
 {{
  "operation": "",
  "section": "",
- "item_id": ""
+ "item_id": "",
+ "field": ""
 }}
 
-Examples:
-
-Question: How many items are there in the dataset?
-Answer:
-{{
- "operation": "count_items",
- "section": "",
- "item_id": ""
-}}
-
-Question: How many sections exist?
-Answer:
-{{
- "operation": "count_sections",
- "section": "",
- "item_id": ""
-}}
-
-Question: Which section was item 1168180533 placed in?
-Answer:
-{{
- "operation": "item_section",
- "section": "",
- "item_id": "1168180533"
-}}
-
-Question: What is the highest ranked item in a section?
-Answer:
-{{
- "operation": "highest_ranked_section",
- "section": "<section>",
- "item_id": ""
-}}
-
-Question: How many ranked items are there in a section?
-Answer:
-{{
- "operation": "count_ranked_items_in_section",
- "section": "<section>",
- "item_id": ""
-}}
-
-Question: How many unranked items are there?
-Answer:
-{{
- "operation": "count_unranked_items",
- "section": "",
- "item_id": ""
-}}
-
-Question: How many unranked items are there in each section?
-Answer:
-{{
- "operation": "unranked_items_per_section",
- "section": "",
- "item_id": ""
-}}
-
-Question: How many unselected items are there?
-Answer:
-{{
- "operation": "count_unselected_items",
- "section": "",
- "item_id": ""
-}}
-
-Question: Which section has the most ranked items?
-Answer:
-{{
- "operation": "section_with_most_ranked",
- "section": "",
- "item_id": ""
-}}
-
-Question: What are the top ranked items?
-Answer:
-{{
- "operation": "top_ranked_items",
- "section": "",
- "item_id": ""
-}}
-
-Question: What is the average rank per section?
-Answer:
-{{
- "operation": "average_rank_per_section",
- "section": "",
- "item_id": ""
-}}
-
-Question: List all ranked items in a section
-Answer:
-{{
- "operation": "items_in_section",
- "section": "<section>",
- "item_id": ""
-}}
-
-Question: Show all items in a section
-Answer:
-{{
- "operation": "items_in_section",
- "section": "<section>",
- "item_id": ""
-}}
-
-Question: Why was item 1168242419 placed in Health Care Industry?
-Answer:
-{{
- "operation": "selected_reason",
- "section": "",
- "item_id": "1168242419"
-}}
-
-Question: Why wasn't item 1168242419 placed in Hospitals?
-Answer:
-{{
- "operation": "other_section_reasons",
- "section": "hospitals_&_hospitals_in_the_home",
- "item_id": "1168242419"
-}}
-
-Question: Why was item 1168210045 unselected?
-Answer:
-{{
- "operation": "unselected_reasons",
- "section": "",
- "item_id": "1168210045"
-}}
-
-Question: How many ranked items per section?
-Answer:
-{{
- "operation": "count_ranked_items_per_section",
- "section": "",
- "item_id": ""
-}}
-
-Question: Give details about an item
-Answer:
-{{
- "operation": "item_details",
- "section": "",
- "item_id": "<item_id>"
-}}
 
 """
 
@@ -307,4 +167,9 @@ Answer:
             return json.loads(text)
 
         except:
-            return {"operation": "unknown"}
+            return {
+                "operation": "unknown",
+                "section": None,
+                "item_id": None,
+                "field": None
+            }

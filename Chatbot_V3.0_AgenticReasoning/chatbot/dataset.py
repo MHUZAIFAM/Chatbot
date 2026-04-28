@@ -109,6 +109,13 @@ class DatasetManager:
 
     def detect_column(self, possible_names):
 
+        # 1️⃣ exact match first
+        for col in self.columns:
+            for name in possible_names:
+                if col.lower() == name.lower():
+                    return col
+
+        # 2️⃣ fallback partial match
         for col in self.columns:
             for name in possible_names:
                 if name.lower() in col.lower():
