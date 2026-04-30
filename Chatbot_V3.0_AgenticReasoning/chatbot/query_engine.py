@@ -778,3 +778,30 @@ class QueryEngine:
             return "Not available in the dataset"
 
         return value
+
+    def ranked_items_per_section(self):
+
+        ranked_df = self.df[self.df[self.rank_col].notna()]
+
+        result = {}
+
+        for sec in self.sections:
+
+            col = f"{sec}_answer"
+
+            if col not in self.df.columns:
+                continue
+
+            section_df = ranked_df[
+                ranked_df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
+            ]
+
+            if not section_df.empty:
+                result[sec] = list(
+                    zip(
+                        section_df[self.id_col].astype(str),
+                        section_df[self.rank_col].astype(int)
+                    )
+                )
+
+        return result

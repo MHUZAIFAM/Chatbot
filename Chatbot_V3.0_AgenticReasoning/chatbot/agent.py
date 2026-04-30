@@ -44,7 +44,7 @@ class ChatbotAgent:
 
     def extract_item_id(self, question):
 
-        match = re.search(r"[A-Za-z]*\d{6,}", question)
+        match = re.search(r"[A-Za-z]*\d{7,}", question)
 
         if match:
             return match.group()
@@ -81,7 +81,11 @@ class ChatbotAgent:
     # =====================================================
 
     def format_section(self, sec):
-        return sec.replace("_", " ").title()
+
+        if not sec or str(sec).lower() in ["nan", "none"]:
+            return "Unknown Section"
+
+        return str(sec).replace("_", " ").title()
 
     # =====================================================
     # MAIN ASK FUNCTION
@@ -227,19 +231,66 @@ class ChatbotAgent:
                             readable = str(result).replace("_", " ")
                             answer = f"The Story ID of Item {item_id} is <b>{readable}</b>."
 
+
+
+                        elif field.lower() in ["ordering section", "section ordering"]:
+
+                            if (
+
+                                    not result
+
+                                    or str(result).lower() in ["nan", "none", "not available in the dataset"]
+
+                            ):
+
+                                # fallback to section_answer columns
+
+                                section = self.query_engine.item_section(item_id)
+
+                                section_name = self.format_section(section)
+
+
+                            else:
+
+                                section_name = self.format_section(result)
+
+                            answer = f"Item {item_id} was placed in {section_name}."
+
                         else:
                             label = field.replace("_", " ").replace("URL", "URL").title()
                             answer = f"<b>Item {item_id}</b> — {label}: {result}"
 
-                # -------------------------------------------------
-                # DICTIONARY RESULTS
-                # -------------------------------------------------
                 elif isinstance(result, dict):
+
+                    # -------------------------------------------------
+                    # RANKED ITEMS PER SECTION
+                    # -------------------------------------------------
+                    if operation == "ranked_items_per_section":
+
+                        if not result:
+                            answer = "No ranked items found."
+
+                        else:
+
+                            lines = []
+
+                            for sec, items in result.items():
+
+                                section_name = self.format_section(sec)
+
+                                lines.append(f"<b>{section_name}</b><br>")
+
+                                for item_id, rank in items:
+                                    lines.append(f"• Item {item_id} — Rank {int(rank)}")
+
+                                lines.append("")  # spacing
+
+                            answer = "<br>".join(lines)
 
                     # -------------------------------------------------
                     # ITEM DETAILS
                     # -------------------------------------------------
-                    if operation == "item_details":
+                    elif operation == "item_details":
 
                         section = result.get("Section")
                         rank = result.get("Rank")

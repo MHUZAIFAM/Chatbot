@@ -116,6 +116,9 @@ count_items_in_section
 item_field
 → return a specific dataset field for an item
 
+ranked_items_per_section
+→ returns all the ranked items in each section
+
 
 Rules:
 
@@ -133,6 +136,7 @@ Rules:
 - If the user asks to LIST or SHOW unselected items → use "unselected_items".
 - If the question asks "How many items in <section>" → use count_items_in_section
 - If the user asks about a specific property of an item (headline, score, outlet, summary, word count, page, etc) use operation "item_field".
+- If the user asks about section ordering, ordering section, where an item was placed, or which section it belongs to, use operation "item_field" and field "ordering section".
 - If the question asks whether an item is leading, lead article, or Is_Lead → use operation "item_field".
 
 Reference Resolution Rules:

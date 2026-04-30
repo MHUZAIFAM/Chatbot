@@ -91,4 +91,7 @@ class Executor:
         if op == "item_field":
             return self.qe.item_field(item_id, plan.get("field"))
 
+        if op == "ranked_items_per_section":
+            return self.qe.ranked_items_per_section()
+
         return None
