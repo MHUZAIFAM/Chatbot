@@ -15,8 +15,7 @@ Planner → Executor → Dataset reasoning → Conversational memory
 
 ---
 
-An **Agentic AI-powered chatbot** that allows users to interact with a
-structured news dataset through natural language.
+An **Agentic AI-powered chatbot** that allows users to interact with a structured news dataset through natural language.
 
 The system combines:
 
@@ -26,8 +25,7 @@ The system combines:
 - agent planning and execution  
 - structured dataset retrieval  
 
-to answer analytical questions about **news articles, rankings,
-sections, and placement explanations**.
+to answer analytical questions about **news articles, rankings, sections, and placement explanations**.
 
 ------------------------------------------------------------------------
 
@@ -86,44 +84,43 @@ Chatbot_V3.0_ReasoningAgent
 
 Example queries:
 
-How many items are in the dataset?\
-What sections exist in the dataset?\
-How many items are in each section?
+- How many items are in the dataset?
+- What sections exist in the dataset?
+- How many items are in each section?
 
 ------------------------------------------------------------------------
 
 ## Section Analysis
 
-List all items in Calvary Coverage\
-How many ranked items are in this section?\
-How many unranked items are in each section?
+- List all items in Calvary Coverage
+- How many ranked items are in this section?
+- How many unranked items are in each section?
 
 ------------------------------------------------------------------------
 
 ## Ranking Analysis
 
-Highest ranked item in the dataset\
-Lowest ranked item in each section\
-List ranked items in Health Care Industry
+- Highest ranked item in the dataset
+- Lowest ranked item in each section
+- List ranked items in Health Care Industry
 
 ------------------------------------------------------------------------
 
 ## Item Placement Analysis
 
-Where was item 1167981127 placed?
+- Where was item 1167981127 placed?
 
 Example output:
 
-Item 1167981127 was placed in the 'Calvary Coverage' section.
+- Item 1167981127 was placed in the 'Calvary Coverage' section.
 
 ------------------------------------------------------------------------
 
 ## Selection Reasoning
 
-Why was item 1167634477 unselected?
+- Why was item 1167634477 unselected?
 
-The system reads dataset \*\_reason columns\* to explain why the item
-was excluded from each section.
+The system reads dataset *reason columns* to explain why the item was excluded from each section.
 
 ------------------------------------------------------------------------
 
@@ -131,15 +128,15 @@ was excluded from each section.
 
 Example conversation:
 
-List all items in Calvary Coverage\
-How many ranked items are in this section?\
-List those ranked items\
-Why was item 1167981127 placed here?
+- List all items in Calvary Coverage
+- How many ranked items are in this section?
+- List those ranked items
+- Why was item 1167981127 placed here?
 
 The system resolves references such as:
 
--   this section\
--   those items\
+-   this section
+-   those items
 -   why
 
 ------------------------------------------------------------------------
@@ -150,8 +147,7 @@ Python **3.10+** recommended
 
 Install dependencies:
 
-pip install fastapi uvicorn streamlit pandas python-dotenv
-google-generativeai
+`pip install fastapi uvicorn streamlit pandas python-dotenv google-generativeai`
 
 ------------------------------------------------------------------------
 
@@ -159,7 +155,7 @@ google-generativeai
 
 Create a `.env` file:
 
-GEMINI_API_KEY=your_api_key_here
+`GEMINI_API_KEY=your_api_key_here`
 
 ------------------------------------------------------------------------
 
@@ -169,11 +165,11 @@ Open two terminals.
 
 Terminal 1:
 
-uvicorn src.main:app --reload --port 8001
+`uvicorn src.main:app --reload --port 8001`
 
 Terminal 2:
 
-streamlit run src/ui.py
+`streamlit run src/ui.py`
 
 ------------------------------------------------------------------------
 
@@ -181,15 +177,15 @@ streamlit run src/ui.py
 
 Streamlit UI
 
-http://localhost:8501
+`http://localhost:8501`
 
 FastAPI Docs
 
-http://127.0.0.1:8001/docs
+`http://127.0.0.1:8001/docs`
 
 Memory Endpoint
 
-http://127.0.0.1:8001/memory
+`http://127.0.0.1:8001/memory`
 
 ------------------------------------------------------------------------
 
