@@ -23,6 +23,16 @@ if "history" not in st.session_state:
 if "titles" not in st.session_state:
     st.session_state.titles = []
 
+if "current_chat" not in st.session_state:
+    st.session_state.current_chat = None
+
+if "show_recents" not in st.session_state:
+    st.session_state.show_recents = True
+
+if "active_chat" not in st.session_state:
+    st.session_state.active_chat = None
+
+
 # -----------------------
 # Sidebar
 # -----------------------
@@ -31,50 +41,55 @@ with st.sidebar:
 
     st.title("⚙️ Controls")
 
-    if st.button("🔄 Reset Chat"):
-
-        if st.session_state.messages:
-
-            first_question = None
-
-            for m in st.session_state.messages:
-                if m["role"] == "user":
-                    first_question = m["content"]
-                    break
-
-            if first_question:
-                title = first_question[:40] + ("..." if len(first_question) > 40 else "")
-            else:
-                title = "New Chat"
-
-            st.session_state.history.append(st.session_state.messages.copy())
-            st.session_state.titles.append(title)
-
+    if st.button("➕ New Chat"):
         st.session_state.messages = []
-
+        st.session_state.current_chat = None
+        st.session_state.active_chat = None
         st.rerun()
 
+
     st.markdown("---")
 
-    st.markdown("### 💬 Previous Chats")
+    # Recents header
+    if len(st.session_state.history) > 0:
 
-    for i in range(len(st.session_state.history) - 1, -1, -1):
+        arrow = "▾" if st.session_state.show_recents else "▸"
 
-        title = st.session_state.titles[i]
-
-        if st.button(f"📂 {title}", key=f"chat_{i}"):
-
-            st.session_state.messages = st.session_state.history[i]
-
+        if st.button(f"Recents\u2009{arrow}", key="toggle_recents"):
+            st.session_state.show_recents = not st.session_state.show_recents
             st.rerun()
 
+    else:
+        st.markdown("### Recents")
+
+    # Chat list (collapsible)
+    if st.session_state.show_recents:
+
+        for i in range(len(st.session_state.history) - 1, -1, -1):
+
+            title = st.session_state.titles[i]
+
+            is_active = st.session_state.active_chat == i
+
+            if is_active:
+                button_type = "primary"
+            else:
+                button_type = "secondary"
+
+            if st.button(
+                    title,
+                    key=f"chat_{i}",
+                    use_container_width=True,
+                    type=button_type
+            ):
+                st.session_state.messages = st.session_state.history[i]
+                st.session_state.active_chat = i
+
+                st.rerun()
+
     st.markdown("---")
+    # st.info("Agentic News Dataset Chatbot")
 
-    st.info("Agentic News Dataset Chatbot")
-
-# -----------------------
-# CSS
-# -----------------------
 
 st.markdown("""
 <style>
@@ -102,13 +117,58 @@ st.markdown("""
     line-height: 1.6;
     white-space: pre-line;
 }
+
 .typing {
     color: #9ca3af;
     font-style: italic;
 }
 
+
+/* sidebar chat buttons */
+section[data-testid="stSidebar"] button {
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+
+    text-align: left;
+
+    padding-left: 12px;
+
+    border-radius: 10px;
+
+    transition: background-color 0.15s ease;
+}
+
+/* hover effect (like ChatGPT) */
+section[data-testid="stSidebar"] button:hover {
+
+    background-color: rgba(255,255,255,0.05);
+}
+
+/* active chat highlight */
+button[kind="primary"] {
+
+    background-color: rgba(255,255,255,0.08) !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+}
+
+
+/* remove border around Recents toggle */
+section[data-testid="stSidebar"] div[data-testid="stButton"]:first-child button {
+
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+button[key="toggle_recents"] {
+    letter-spacing: 0.5px;
+}
+
 </style>
 """, unsafe_allow_html=True)
+
 
 # -----------------------
 # Header
@@ -116,6 +176,7 @@ st.markdown("""
 
 st.title("🧠 Agentic News Chatbot")
 st.write("Ask questions about the dataset.")
+
 
 # -----------------------
 # Chat Display
@@ -135,6 +196,7 @@ for msg in st.session_state.messages:
             unsafe_allow_html=True
         )
 
+
 # -----------------------
 # Chat Input
 # -----------------------
@@ -148,7 +210,19 @@ if prompt:
         "content": prompt
     })
 
+    # Create chat entry when first question is asked
+    if st.session_state.current_chat is None:
+        words = prompt.split()
+        title = " ".join(words[:5]) + "..." if len(words) > 5 else prompt
+
+        st.session_state.history.append(st.session_state.messages.copy())
+        st.session_state.titles.append(title)
+
+        st.session_state.current_chat = len(st.session_state.history) - 1
+        st.session_state.active_chat = st.session_state.current_chat
+
     st.rerun()
+
 
 # -----------------------
 # Generate Bot Response
@@ -160,7 +234,6 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
 
     thinking = st.empty()
 
-    # Thinking animation
     dots = 0
     for _ in range(10):
         thinking.markdown(
@@ -179,7 +252,6 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
         )
 
         result = response.json()
-
         answer = result.get("answer", "No response received.")
 
     except Exception as e:
@@ -188,7 +260,6 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
 
     thinking.empty()
 
-    # Streaming typing effect
     streamed = ""
     placeholder = st.empty()
 
@@ -208,7 +279,11 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
         "content": streamed
     })
 
+    if st.session_state.current_chat is not None:
+        st.session_state.history[st.session_state.current_chat] = st.session_state.messages.copy()
+
     st.rerun()
+
 
 # -----------------------
 # Auto Scroll
