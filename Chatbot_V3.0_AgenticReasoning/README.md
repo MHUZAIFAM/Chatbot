@@ -1,55 +1,68 @@
-# Agentic News Dataset Chatbot
+# 🧠 Agentic News Dataset Chatbot
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-API-green)
-![Streamlit](https://img.shields.io/badge/Streamlit-UI-red)
-![Version](https://img.shields.io/badge/version-v3.0-orange)
-
-## Latest Release
-
-**v3.0 — Reasoning Agent Architecture**
-
-Planner → Executor → Dataset reasoning → Conversational memory
-
-[View Release Notes](https://github.com/MHUZAIFAM/Chatbot/releases/tag/v3.0)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green)
+![Frontend](https://img.shields.io/badge/Custom%20Frontend-JS%20%2B%20HTML-blue)
+![Version](https://img.shields.io/badge/version-v3.1-orange)
 
 ---
 
-An **Agentic AI-powered chatbot** that allows users to interact with a structured news dataset through natural language.
+## 🚀 Overview
 
-The system combines:
+An **Agentic AI-powered chatbot** that enables users to interact with a structured news dataset using natural language.
 
-- deterministic dataset analytics  
-- conversational memory  
-- LLM reasoning  
-- agent planning and execution  
-- structured dataset retrieval  
+This system combines:
 
-to answer analytical questions about **news articles, rankings, sections, and placement explanations**.
+* Deterministic dataset analytics
+* Conversational memory
+* LLM-based reasoning
+* Agent planning & execution
+* Structured data retrieval
 
-------------------------------------------------------------------------
+to answer analytical queries about:
 
-# Agentic Reasoning Architecture (V3)
+* News articles
+* Rankings
+* Sections
+* Placement reasoning
 
-The system follows a **planner → executor → reasoning pipeline**.
+---
 
-User → Streamlit UI → FastAPI Backend → ChatbotAgent
+## 🧩 Agentic Reasoning Architecture (V3)
 
-Modules:
-
--   Planner -- LLM converts question into structured operation\
--   Executor -- executes deterministic dataset operations\
--   QueryEngine -- dataset analytics and computations\
--   DataRetriever -- retrieves relevant dataset rows\
--   AnswerGenerator -- Gemini LLM reasoning\
--   ConversationMemory -- maintains conversation context
-
-------------------------------------------------------------------------
-
-# Project Structure
+The system follows a **Planner → Executor → Reasoning pipeline**:
 
 ```
-Chatbot_V3.0_ReasoningAgent
+User → Frontend UI → FastAPI → ChatbotAgent
+```
+
+### Core Modules
+
+* **Planner** → Converts natural language into structured operations
+* **Executor** → Runs deterministic dataset logic
+* **QueryEngine** → Handles dataset analytics
+* **DataRetriever** → Fetches relevant dataset rows
+* **AnswerGenerator** → Generates explanations using Gemini
+* **ConversationMemory** → Maintains context across queries
+
+---
+
+## 🖥️ Frontend (New)
+
+A **custom-built chat UI** replaces Streamlit for a more modern experience:
+
+* ChatGPT-style interface
+* Sidebar with recent chats
+* Real-time responses
+* Stop generation button
+* Clean dark UI with custom styling
+
+---
+
+## 📁 Project Structure
+
+```
+Chatbot_V3.0_AgenticReasoning
 │
 ├── Data
 │   └── Full_Enriched_Dataset.csv
@@ -68,173 +81,186 @@ Chatbot_V3.0_ReasoningAgent
 │   └── models.py
 │
 ├── src
-│   ├── main.py
-│   └── ui.py
+│   └── main.py
+│
+├── frontend
+│   ├── index.html
+│   ├── app.js
+│   └── style.css
 │
 ├── .env
 ├── .gitignore
 └── README.md
 ```
 
-------------------------------------------------------------------------
+---
 
-# Key Features
+## ✨ Key Features
 
-## Dataset Exploration
+### 📊 Dataset Exploration
 
-Example queries:
+* How many items are in the dataset?
+* What sections exist?
+* Count items per section
 
-- How many items are in the dataset?
-- What sections exist in the dataset?
-- How many items are in each section?
+---
 
-------------------------------------------------------------------------
+### 🧾 Section Analysis
 
-## Section Analysis
+* List all items in a section
+* Count ranked/unranked items
+* Compare sections
 
-- List all items in Calvary Coverage
-- How many ranked items are in this section?
-- How many unranked items are in each section?
+---
 
-------------------------------------------------------------------------
+### 🏆 Ranking Analysis
 
-## Ranking Analysis
+* Highest/lowest ranked items
+* Section-wise rankings
+* Ranked item listings
 
-- Highest ranked item in the dataset
-- Lowest ranked item in each section
-- List ranked items in Health Care Industry
+---
 
-------------------------------------------------------------------------
+### 📍 Item Placement Analysis
 
-## Item Placement Analysis
+Example:
 
-- Where was item 1167981127 placed?
+> Where was item 1167981127 placed?
 
-Example output:
+Output:
 
-- Item 1167981127 was placed in the 'Calvary Coverage' section.
+> Item 1167981127 was placed in *Calvary Coverage*
 
-------------------------------------------------------------------------
+---
 
-## Selection Reasoning
+### 🧠 Selection Reasoning
 
-- Why was item 1167634477 unselected?
+Explain **why items were selected or rejected** using dataset reasoning columns.
 
-The system reads dataset *reason columns* to explain why the item was excluded from each section.
+---
 
-------------------------------------------------------------------------
+### 💬 Conversational Memory
 
-## Conversational Memory
+Supports context-aware queries:
 
-Example conversation:
+* "this section"
+* "those items"
+* "why was it placed here?"
 
-- List all items in Calvary Coverage
-- How many ranked items are in this section?
-- List those ranked items
-- Why was item 1167981127 placed here?
+---
 
-The system resolves references such as:
+## ⚙️ Requirements
 
--   this section
--   those items
--   why
-
-------------------------------------------------------------------------
-
-# Requirements
-
-Python **3.10+** recommended
+* Python **3.10+**
 
 Install dependencies:
 
-`pip install fastapi uvicorn streamlit pandas python-dotenv google-generativeai`
+```bash
+pip install fastapi uvicorn pandas python-dotenv google-generativeai
+```
 
-------------------------------------------------------------------------
+---
 
-# Environment Setup
+## 🔐 Environment Setup
 
 Create a `.env` file:
 
-`GEMINI_API_KEY=your_api_key_here`
+```env
+GEMINI_API_KEY=your_api_key_here
+```
 
-------------------------------------------------------------------------
+---
 
-# Running the Application
+## ▶️ Running the Application
 
-Open two terminals.
+### 1️⃣ Start Backend
 
-Terminal 1:
+```bash
+uvicorn src.main:app --reload --port 8001
+```
 
-`uvicorn src.main:app --reload --port 8001`
+---
 
-Terminal 2:
+### 2️⃣ Run Frontend
 
-`streamlit run src/ui.py`
+Open manually:
 
-------------------------------------------------------------------------
+```
+frontend/index.html
+```
 
-# Accessing the Application
+OR serve it:
 
-Streamlit UI
+```bash
+python -m http.server
+```
 
-`http://localhost:8501`
+---
 
-FastAPI Docs
+## 🌐 Access
 
-`http://127.0.0.1:8001/docs`
+* API Docs → http://127.0.0.1:8001/docs
+* Chat UI → open frontend/index.html
 
-Memory Endpoint
+---
 
-`http://127.0.0.1:8001/memory`
+## 🧱 Tech Stack
 
-------------------------------------------------------------------------
+* FastAPI
+* Vanilla JS (Frontend)
+* HTML/CSS
+* Pandas
+* Google Gemini API
 
-# Technology Stack
+---
 
--   FastAPI
--   Streamlit
--   Pandas
--   Google Gemini API
--   Python
+## 📜 Version History
 
-------------------------------------------------------------------------
+### 🔹 V1.0 — Rule-Based
 
-# Version History
+* Deterministic logic
+* No reasoning
 
-## V1.0 --- Rule-Based Chatbot
+---
 
-Chatbot_V1.0_RuleBased
+### 🔹 V2.0 — Agentic
 
--   Deterministic logic
--   No reasoning
--   No conversational memory
+* Modular architecture
+* LLM integration
 
-## V2.0 --- Agentic Chatbot
+---
 
-Chatbot_V2.0_Agentic
+### 🔹 V3.0 — Reasoning Agent
 
--   Modular architecture
--   LLM reasoning
--   Structured dataset querying
+* Planner → Executor pipeline
+* Multi-step reasoning
+* Conversational memory
 
-## V3.0 --- Reasoning Agent
+---
 
-Chatbot_V3.0_ReasoningAgent
+### 🔹 V3.1 — Custom UI Upgrade
 
-New capabilities:
+* Full frontend redesign
+* Chat-based interaction system
+* Stop-generation control
+* Sidebar chat history
 
--   Planner → Executor architecture
--   Multi-step reasoning
--   Conversational memory improvements
--   Section-aware dataset analytics
--   Classification explanation generation
+---
 
-------------------------------------------------------------------------
+## 🔮 Future Improvements
 
-# Future Improvements
+* Vector search (semantic retrieval)
+* Multi-dataset support
+* Visualization dashboards
+* Streaming responses
+* Evaluation benchmarks
 
--   migrate to google.genai SDK
--   semantic vector search
--   visualization dashboards
--   multi-dataset support
--   reasoning evaluation benchmarks
+---
+
+## 👤 Author
+
+Muhammad Huzaifa
+
+---
+
+## ⭐ If you like this project, consider starring it!

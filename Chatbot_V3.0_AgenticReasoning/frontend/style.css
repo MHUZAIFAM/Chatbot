@@ -1,19 +1,18 @@
 /* =========================
    BASE THEME
-   ========================= */
+========================= */
 body {
   margin: 0;
   font-family: Inter, sans-serif;
 
-  /* 🔥 ULTRA DARK BACKGROUND */
-  background: #070512;
+  background: #0b0b0b;
   color: #ffffff;
 }
 
 
 /* =========================
    MAIN LAYOUT
-   ========================= */
+========================= */
 .app {
   display: flex;
   height: 100vh;
@@ -22,10 +21,10 @@ body {
 
 /* =========================
    SIDEBAR
-   ========================= */
+========================= */
 .sidebar {
   width: 260px;
-  background: #090714;
+  background: #111111;
   padding: 20px;
 
   display: flex;
@@ -34,24 +33,20 @@ body {
 
   transition: width 0.25s ease;
 
-  /* 🔥 ADD THIS */
-  border-right: 1px solid #1c1830;
+  border-right: 1px solid #1f1f1f;
 }
 
-/* Collapsed sidebar */
 .sidebar.collapsed {
   width: 70px;
   padding: 20px 10px;
 }
 
-/* Hide text when collapsed */
 .sidebar.collapsed h2,
 .sidebar.collapsed h3,
 .sidebar.collapsed .recent-item span {
   display: none;
 }
 
-/* Titles */
 .sidebar h2,
 .sidebar h3 {
   font-size: 18px;
@@ -61,29 +56,26 @@ body {
 
 /* =========================
    DIVIDER
-   ========================= */
+========================= */
 hr {
   border: none;
   height: 1px;
-
-  /* 🔥 subtle divider */
-  background: #1c1830;
-
+  background: #1f1f1f;
   margin: 12px 0;
 }
 
 
 /* =========================
    SIDEBAR BUTTONS
-   ========================= */
+========================= */
 .sidebar button {
-  background: #12101f;
-  border: 1px solid #1c1830;
+  background: #1a1a1a;
+  border: 1px solid #262626;
 
   padding: 10px 12px;
   border-radius: 10px;
 
-  color: #a8a2b8;
+  color: #b3b3b3;
   font-size: 14px;
 
   cursor: pointer;
@@ -91,14 +83,14 @@ hr {
 }
 
 .sidebar button:hover {
-  background: #18142a;
+  background: #222222;
   color: white;
 }
 
 
 /* =========================
    RECENTS LIST
-   ========================= */
+========================= */
 #recents {
   display: flex;
   flex-direction: column;
@@ -108,7 +100,7 @@ hr {
 
 .recent-item {
   font-size: 13px;
-  color: #a8a2b8;
+  color: #b3b3b3;
 
   padding: 8px 10px;
   border-radius: 10px;
@@ -117,17 +109,15 @@ hr {
   transition: all 0.2s ease;
 }
 
-/* Hover effect */
 .recent-item:hover {
-  background: #141124;
+  background: #1a1a1a;
   color: white;
 }
 
-/* Active chat highlight */
+/* 🔥 ACTIVE CHAT */
 .recent-item.active {
-  background: #18142a;
-  border: 1px solid #2a2440;
-
+  background: #222222;
+  border: 1px solid #333333;
   color: white;
   font-weight: 500;
 }
@@ -135,7 +125,7 @@ hr {
 
 /* =========================
    CHAT AREA
-   ========================= */
+========================= */
 .chat-area {
   flex: 1;
 
@@ -144,35 +134,31 @@ hr {
 
   padding: 20px;
 
-  /* ❗ prevents double scroll */
   overflow: hidden;
 }
 
 
 /* =========================
    HEADER
-   ========================= */
+========================= */
 .header {
   font-size: 18px;
   font-weight: 500;
-
   margin-bottom: 16px;
-
-  /* 🔥 WHITE TITLE */
   color: #ffffff;
 }
 
 
 /* =========================
-   SIDEBAR TOGGLE BUTTON
-   ========================= */
+   TOGGLE BUTTON
+========================= */
 .toggle-btn {
   position: absolute;
   top: 20px;
   left: 270px;
 
-  background: #12101f;
-  border: 1px solid #1c1830;
+  background: #1a1a1a;
+  border: 1px solid #262626;
 
   color: white;
   border-radius: 8px;
@@ -184,10 +170,9 @@ hr {
 }
 
 .toggle-btn:hover {
-  background: #18142a;
+  background: #222222;
 }
 
-/* Adjust position when collapsed */
 .sidebar.collapsed ~ .toggle-btn {
   left: 80px;
 }
@@ -195,34 +180,32 @@ hr {
 
 /* =========================
    EMPTY STATE
-   ========================= */
+========================= */
 .empty-state {
   flex: 1;
 
   display: flex;
-  flex-direction: column;
+  flex-direction: column;      /* 🔥 KEY FIX */
   justify-content: center;
   align-items: center;
 
-  gap: 20px;
+  gap: 20px;                  /* spacing between text & input */
 }
 
 .empty-state h2 {
-  font-size: 22px;
-  font-weight: 500;
-
-  color: #a8a2b8;
+  color: #b3b3b3;
+  margin: 0;
+  font-size: 38px;
 }
 
 
 /* =========================
    CHAT CONTAINER
-   ========================= */
+========================= */
 .chat-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-
   overflow: hidden;
 }
 
@@ -233,7 +216,7 @@ hr {
 
 /* =========================
    MESSAGES AREA
-   ========================= */
+========================= */
 .messages {
   flex: 1;
 
@@ -241,21 +224,18 @@ hr {
   flex-direction: column;
   gap: 12px;
 
-  /* Center content */
   max-width: 900px;
   width: 100%;
   margin: 0 auto;
 
   overflow-y: auto;
-
-  /* ❗ critical for scroll fix */
   min-height: 0;
 }
 
 
 /* =========================
    MESSAGE ROWS
-   ========================= */
+========================= */
 .message-row {
   display: flex;
 }
@@ -272,40 +252,38 @@ hr {
 
 /* =========================
    MESSAGE BUBBLES
-   ========================= */
+========================= */
 .bubble {
   padding: 12px 16px;
   border-radius: 16px;
 
   max-width: 65%;
-  font-size: 14px;
+  font-size: 15px;
 
-  /* Fix formatting issues */
   white-space: pre-wrap;
   line-height: 1.5;
   word-break: break-word;
 }
 
-/* User bubble */
+/* USER */
 .message-row.user .bubble {
-  background: #18142a;
+  background: #222222;
 }
 
-/* 🔥 BOT RESPONSE (SOFT CONTAINER, NOT BUBBLE) */
+/* BOT */
 .message-row.bot .bubble {
-  background: rgba(255, 255, 255, 0.03);   /* very subtle */
+  background: rgba(255, 255, 255, 0.04);
   padding: 14px 18px;
   border-radius: 12px;
 
   margin-left: 8px;
-  color: #d6d1f5;
-
-  line-height: 1.6;
+  color: #d1d1d1;
 }
+
 
 /* =========================
    PROMPT BAR
-   ========================= */
+========================= */
 .prompt-bar {
   max-width: 900px;
   width: 100%;
@@ -314,8 +292,8 @@ hr {
   display: flex;
   gap: 10px;
 
-  background: #12101f;
-  border: 1px solid #1c1830;
+  background: #1a1a1a;
+  border: 1px solid #262626;
 
   padding: 12px 16px;
   border-radius: 24px;
@@ -323,26 +301,22 @@ hr {
   align-items: center;
 }
 
-/* Center version (empty state) */
 .prompt-bar.center {
   max-width: 700px;
 }
 
-/* Bottom version */
 .prompt-bar.bottom {
   margin-top: 12px;
 }
 
 
 /* =========================
-   INPUT FIELD
-   ========================= */
+   INPUT
+========================= */
 .prompt-bar input {
   flex: 1;
-
   background: transparent;
   border: none;
-
   color: white;
   outline: none;
 }
@@ -350,31 +324,44 @@ hr {
 
 /* =========================
    SEND BUTTON
-   ========================= */
+========================= */
 .prompt-bar button {
   width: 36px;
   height: 36px;
 
   border-radius: 50%;
-
-  /* 🔥 Accent */
-  background: #3b36b3;
+  background: #2a2a2a;
 
   border: none;
   color: white;
 
   cursor: pointer;
   transition: all 0.2s ease;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .prompt-bar button:hover {
-  background: #4338ca;
+  background: #3a3a3a;
 }
 
 
 /* =========================
-   TYPING ANIMATION
-   ========================= */
+   STOP ICON
+========================= */
+.stop-icon {
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 3px;
+}
+
+
+/* =========================
+   TYPING
+========================= */
 .typing::after {
   content: "...";
   animation: dots 1s infinite;
@@ -388,10 +375,10 @@ hr {
 
 
 /* =========================
-   CLEAN SCROLLBAR
-   ========================= */
+   SCROLLBAR
+========================= */
 .messages::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .messages::-webkit-scrollbar-track {
@@ -399,10 +386,10 @@ hr {
 }
 
 .messages::-webkit-scrollbar-thumb {
-  background: #1c1830;
+  background: #2a2a2a;
   border-radius: 10px;
 }
 
 .messages::-webkit-scrollbar-thumb:hover {
-  background: #312c9e;
+  background: #3a3a3a;
 }
