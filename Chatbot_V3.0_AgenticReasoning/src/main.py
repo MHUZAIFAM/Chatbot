@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from chatbot.agent import ChatbotAgent
@@ -9,6 +10,7 @@ from schema.models import QuestionRequest, AnswerResponse
 # --------------------------------
 # Load environment variables
 # --------------------------------
+
 load_dotenv()
 
 API_KEY = os.getenv("GEMINI_API_KEY")
@@ -19,6 +21,7 @@ DATASET_PATH = "Data/Full_Enriched_Dataset.csv"
 # --------------------------------
 # Initialize FastAPI
 # --------------------------------
+
 app = FastAPI(
     title="Agentic News Chatbot",
     version="3.0"
@@ -26,8 +29,22 @@ app = FastAPI(
 
 
 # --------------------------------
+# CORS (IMPORTANT for frontend)
+# --------------------------------
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],       # allow frontend access
+    allow_credentials=True,
+    allow_methods=["*"],       # allow POST, GET, OPTIONS
+    allow_headers=["*"],
+)
+
+
+# --------------------------------
 # Initialize Chatbot Agent
 # --------------------------------
+
 chatbot = ChatbotAgent(
     dataset_path=DATASET_PATH,
     api_key=API_KEY
@@ -37,6 +54,7 @@ chatbot = ChatbotAgent(
 # --------------------------------
 # Root endpoint
 # --------------------------------
+
 @app.get("/")
 def root():
 
@@ -48,6 +66,7 @@ def root():
 # --------------------------------
 # Ask endpoint
 # --------------------------------
+
 @app.post("/ask", response_model=AnswerResponse)
 def ask_question(request: QuestionRequest):
 

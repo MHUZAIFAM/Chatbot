@@ -1,0 +1,408 @@
+/* =========================
+   BASE THEME
+   ========================= */
+body {
+  margin: 0;
+  font-family: Inter, sans-serif;
+
+  /* 🔥 ULTRA DARK BACKGROUND */
+  background: #070512;
+  color: #ffffff;
+}
+
+
+/* =========================
+   MAIN LAYOUT
+   ========================= */
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+
+/* =========================
+   SIDEBAR
+   ========================= */
+.sidebar {
+  width: 260px;
+  background: #090714;
+  padding: 20px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  transition: width 0.25s ease;
+
+  /* 🔥 ADD THIS */
+  border-right: 1px solid #1c1830;
+}
+
+/* Collapsed sidebar */
+.sidebar.collapsed {
+  width: 70px;
+  padding: 20px 10px;
+}
+
+/* Hide text when collapsed */
+.sidebar.collapsed h2,
+.sidebar.collapsed h3,
+.sidebar.collapsed .recent-item span {
+  display: none;
+}
+
+/* Titles */
+.sidebar h2,
+.sidebar h3 {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+
+/* =========================
+   DIVIDER
+   ========================= */
+hr {
+  border: none;
+  height: 1px;
+
+  /* 🔥 subtle divider */
+  background: #1c1830;
+
+  margin: 12px 0;
+}
+
+
+/* =========================
+   SIDEBAR BUTTONS
+   ========================= */
+.sidebar button {
+  background: #12101f;
+  border: 1px solid #1c1830;
+
+  padding: 10px 12px;
+  border-radius: 10px;
+
+  color: #a8a2b8;
+  font-size: 14px;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar button:hover {
+  background: #18142a;
+  color: white;
+}
+
+
+/* =========================
+   RECENTS LIST
+   ========================= */
+#recents {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.recent-item {
+  font-size: 13px;
+  color: #a8a2b8;
+
+  padding: 8px 10px;
+  border-radius: 10px;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Hover effect */
+.recent-item:hover {
+  background: #141124;
+  color: white;
+}
+
+/* Active chat highlight */
+.recent-item.active {
+  background: #18142a;
+  border: 1px solid #2a2440;
+
+  color: white;
+  font-weight: 500;
+}
+
+
+/* =========================
+   CHAT AREA
+   ========================= */
+.chat-area {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 20px;
+
+  /* ❗ prevents double scroll */
+  overflow: hidden;
+}
+
+
+/* =========================
+   HEADER
+   ========================= */
+.header {
+  font-size: 18px;
+  font-weight: 500;
+
+  margin-bottom: 16px;
+
+  /* 🔥 WHITE TITLE */
+  color: #ffffff;
+}
+
+
+/* =========================
+   SIDEBAR TOGGLE BUTTON
+   ========================= */
+.toggle-btn {
+  position: absolute;
+  top: 20px;
+  left: 270px;
+
+  background: #12101f;
+  border: 1px solid #1c1830;
+
+  color: white;
+  border-radius: 8px;
+
+  padding: 6px 10px;
+  cursor: pointer;
+
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+  background: #18142a;
+}
+
+/* Adjust position when collapsed */
+.sidebar.collapsed ~ .toggle-btn {
+  left: 80px;
+}
+
+
+/* =========================
+   EMPTY STATE
+   ========================= */
+.empty-state {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  gap: 20px;
+}
+
+.empty-state h2 {
+  font-size: 22px;
+  font-weight: 500;
+
+  color: #a8a2b8;
+}
+
+
+/* =========================
+   CHAT CONTAINER
+   ========================= */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  overflow: hidden;
+}
+
+.hidden {
+  display: none;
+}
+
+
+/* =========================
+   MESSAGES AREA
+   ========================= */
+.messages {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  /* Center content */
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+
+  overflow-y: auto;
+
+  /* ❗ critical for scroll fix */
+  min-height: 0;
+}
+
+
+/* =========================
+   MESSAGE ROWS
+   ========================= */
+.message-row {
+  display: flex;
+}
+
+.message-row.user {
+  justify-content: flex-end;
+}
+
+.message-row.bot {
+  justify-content: flex-start;
+  margin-top: 6px;
+}
+
+
+/* =========================
+   MESSAGE BUBBLES
+   ========================= */
+.bubble {
+  padding: 12px 16px;
+  border-radius: 16px;
+
+  max-width: 65%;
+  font-size: 14px;
+
+  /* Fix formatting issues */
+  white-space: pre-wrap;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* User bubble */
+.message-row.user .bubble {
+  background: #18142a;
+}
+
+/* 🔥 BOT RESPONSE (SOFT CONTAINER, NOT BUBBLE) */
+.message-row.bot .bubble {
+  background: rgba(255, 255, 255, 0.03);   /* very subtle */
+  padding: 14px 18px;
+  border-radius: 12px;
+
+  margin-left: 8px;
+  color: #d6d1f5;
+
+  line-height: 1.6;
+}
+
+/* =========================
+   PROMPT BAR
+   ========================= */
+.prompt-bar {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+
+  display: flex;
+  gap: 10px;
+
+  background: #12101f;
+  border: 1px solid #1c1830;
+
+  padding: 12px 16px;
+  border-radius: 24px;
+
+  align-items: center;
+}
+
+/* Center version (empty state) */
+.prompt-bar.center {
+  max-width: 700px;
+}
+
+/* Bottom version */
+.prompt-bar.bottom {
+  margin-top: 12px;
+}
+
+
+/* =========================
+   INPUT FIELD
+   ========================= */
+.prompt-bar input {
+  flex: 1;
+
+  background: transparent;
+  border: none;
+
+  color: white;
+  outline: none;
+}
+
+
+/* =========================
+   SEND BUTTON
+   ========================= */
+.prompt-bar button {
+  width: 36px;
+  height: 36px;
+
+  border-radius: 50%;
+
+  /* 🔥 Accent */
+  background: #3b36b3;
+
+  border: none;
+  color: white;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.prompt-bar button:hover {
+  background: #4338ca;
+}
+
+
+/* =========================
+   TYPING ANIMATION
+   ========================= */
+.typing::after {
+  content: "...";
+  animation: dots 1s infinite;
+}
+
+@keyframes dots {
+  0% { content: "."; }
+  33% { content: ".."; }
+  66% { content: "..."; }
+}
+
+
+/* =========================
+   CLEAN SCROLLBAR
+   ========================= */
+.messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages::-webkit-scrollbar-thumb {
+  background: #1c1830;
+  border-radius: 10px;
+}
+
+.messages::-webkit-scrollbar-thumb:hover {
+  background: #312c9e;
+}
