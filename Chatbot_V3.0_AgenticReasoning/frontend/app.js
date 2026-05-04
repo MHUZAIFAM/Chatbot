@@ -129,6 +129,10 @@ async function handleMessage(text) {
     loading.classList.remove("typing");
     loading.innerHTML = cleanHTML(data.answer);
 
+    // 🔥 scroll twice to ensure full render
+    scrollToBottom();
+    setTimeout(scrollToBottom, 50);
+
     currentChat.push({ type: "bot", text: data.answer });
 
     // Update existing chat
@@ -198,8 +202,7 @@ function addMessage(text, type) {
 
   row.appendChild(bubble);
   messages.appendChild(row);
-
-  messages.scrollTop = messages.scrollHeight;
+  scrollToBottom();
 
   return bubble;
 }
@@ -286,7 +289,20 @@ function searchChats() {
    SIDEBAR TOGGLE
 ========================= */
 function toggleSidebar() {
-  document.querySelector(".sidebar").classList.toggle("collapsed");
+  const sidebar = document.querySelector(".sidebar");
+  const chatArea = document.querySelector(".chat-area");
+  const recents = document.getElementById("recents");
+  const arrow = document.getElementById("recentsArrow");
+
+  const collapsed = sidebar.classList.toggle("collapsed");
+  chatArea.classList.toggle("sidebar-collapsed");
+
+  // 🔥 WHEN COLLAPSING → ALWAYS RESET RECENTS
+  if (collapsed) {
+    recents.style.display = "none";
+    arrow.classList.add("rotated");
+    recentsVisible = false;
+  }
 }
 
 
@@ -300,3 +316,51 @@ inputCenter.addEventListener("keypress", function (e) {
 inputBottom.addEventListener("keypress", function (e) {
   if (e.key === "Enter") handleSend();
 });
+
+let recentsVisible = true;
+
+function toggleRecents() {
+  const recents = document.getElementById("recents");
+  const arrow = document.getElementById("recentsArrow");
+
+  recentsVisible = !recentsVisible;
+
+  if (recentsVisible) {
+    recents.style.display = "flex";
+    arrow.classList.remove("rotated");
+  } else {
+    recents.style.display = "none";
+    arrow.classList.add("rotated");
+  }
+}
+
+function handleRecentsClick() {
+  const sidebar = document.querySelector(".sidebar");
+  const recents = document.getElementById("recents");
+  const arrow = document.getElementById("recentsArrow");
+
+  // ✅ If collapsed → open sidebar + expand recents
+  if (sidebar.classList.contains("collapsed")) {
+    sidebar.classList.remove("collapsed");
+
+    recents.style.display = "flex";
+    arrow.classList.remove("rotated");
+
+    recentsVisible = true;
+  } else {
+    // otherwise just toggle
+    toggleRecents();
+  }
+}
+
+function scrollToBottom() {
+  const messages = document.getElementById("messages");
+
+  // 🔥 wait for DOM render
+  requestAnimationFrame(() => {
+    messages.scrollTo({
+      top: messages.scrollHeight,
+      behavior: "smooth"
+    });
+  });
+}

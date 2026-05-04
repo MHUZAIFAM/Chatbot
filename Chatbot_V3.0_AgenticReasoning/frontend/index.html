@@ -11,14 +11,42 @@
 
   <!-- Sidebar -->
   <div class="sidebar">
-    <h2>Chats</h2>
+    <h2 class="sidebar-title sidebar-btn" onclick="toggleSidebar()">
+  <div class="icon-wrapper">
+    <img class="icon brain"
+         src="https://img.icons8.com/?size=100&id=KlAC5P1TnEXu&format=png&color=FFFFFF" />
 
-    <button onclick="newChat()">+ New chats</button>
-    <button onclick="searchChats()">🔍 Search chats</button>
+    <img class="icon menu"
+         src="https://img.icons8.com/?size=100&id=24AIqLkxXRY9&format=png&color=FFFFFF" />
+  </div>
+
+  <span>Chats</span>
+</h2>
+
+<button onclick="newChat()" class="sidebar-btn">
+  <img src="https://img.icons8.com/?size=100&id=98&format=png&color=FFFFFF" />
+  <span>New chats</span>
+</button>
+
+<button onclick="searchChats()" class="sidebar-btn">
+  <img src="https://img.icons8.com/?size=100&id=2sWrwEXiaegS&format=png&color=FFFFFF" />
+  <span>Search chats</span>
+</button>
 
     <hr>
 
-    <h3>Recents</h3>
+    <h3 class="recents-title">
+
+  <div class="recents-left" onclick="handleRecentsClick()">
+    <img src="https://img.icons8.com/?size=100&id=SdWYNX9NPaLL&format=png&color=FFFFFF" />
+    <span>Recents</span>
+  </div>
+
+  <img id="recentsArrow" class="arrow" onclick="toggleRecents()"
+       src="https://img.icons8.com/?size=100&id=39786&format=png&color=FFFFFF" />
+
+</h3>
+
     <div id="recents"></div>
   </div>
 

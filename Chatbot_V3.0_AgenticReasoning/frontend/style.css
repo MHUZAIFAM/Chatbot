@@ -41,9 +41,8 @@ body {
   padding: 20px 10px;
 }
 
-.sidebar.collapsed h2,
-.sidebar.collapsed h3,
-.sidebar.collapsed .recent-item span {
+.sidebar.collapsed .sidebar-title span,
+.sidebar.collapsed .recents-title span {
   display: none;
 }
 
@@ -69,22 +68,29 @@ hr {
    SIDEBAR BUTTONS
 ========================= */
 .sidebar button {
-  background: #1a1a1a;
-  border: 1px solid #262626;
+  background: transparent;     /* ❌ remove box */
+  border: none;
 
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 8px 0;              /* tighter, cleaner */
+  border-radius: 0;
 
   color: #b3b3b3;
   font-size: 14px;
 
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
+
+  text-align: left;            /* 🔥 ALIGN LEFT */
+}
+
+.sidebar button {
+  border-radius: 10px;
 }
 
 .sidebar button:hover {
-  background: #222222;
+  background: #1a1a1a;
   color: white;
+  border-radius: 10px;
 }
 
 
@@ -132,7 +138,7 @@ hr {
   display: flex;
   flex-direction: column;
 
-  padding: 20px;
+  padding: 20px 20px 20px 24px;
 
   overflow: hidden;
 }
@@ -141,40 +147,16 @@ hr {
 /* =========================
    HEADER
 ========================= */
+
 .header {
   font-size: 18px;
   font-weight: 500;
-  margin-bottom: 16px;
   color: #ffffff;
-}
 
+  margin-top: 12px;      /* 🔥 adjust this */
+  margin-bottom: 16px;
 
-/* =========================
-   TOGGLE BUTTON
-========================= */
-.toggle-btn {
-  position: absolute;
-  top: 20px;
-  left: 270px;
-
-  background: #1a1a1a;
-  border: 1px solid #262626;
-
-  color: white;
-  border-radius: 8px;
-
-  padding: 6px 10px;
-  cursor: pointer;
-
-  transition: all 0.2s;
-}
-
-.toggle-btn:hover {
-  background: #222222;
-}
-
-.sidebar.collapsed ~ .toggle-btn {
-  left: 80px;
+  line-height: 1;       /* 🔥 CRITICAL for alignment */
 }
 
 
@@ -392,4 +374,207 @@ hr {
 
 .messages::-webkit-scrollbar-thumb:hover {
   background: #3a3a3a;
+}
+
+/* =========================
+   SIDEBAR BUTTON WITH ICON
+========================= */
+.sidebar-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar-btn {
+  justify-content: flex-start;   /* 🔥 ensure alignment */
+}
+
+/* TEXT */
+.sidebar-btn span {
+  color: #b3b3b3;
+}
+
+/* ICON SIZE */
+.sidebar-btn img {
+  width: 16px;
+  height: 16px;
+  opacity: 0.8;
+}
+
+/* HOVER EFFECT */
+.sidebar button:hover img {
+  opacity: 1;
+}
+
+/* =========================
+   RECENTS TITLE WITH ICON
+========================= */
+.recents-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recents-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;   /* 🔥 pushes arrow right */
+  cursor: pointer;
+}
+
+.recents-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* icon size */
+.recents-title img {
+  width: 16px;
+  height: 16px;
+  opacity: 0.8;
+}
+
+/* =========================
+   ARROW ROTATION
+========================= */
+.arrow {
+  transition: transform 0.25s ease;
+}
+
+.arrow.rotated {
+  transform: rotate(-90deg);  /* ▼ → > */
+}
+
+/* =========================
+   SIDEBAR TITLE WITH ICON
+========================= */
+.sidebar-title {
+  display: flex;
+  align-items: center;   /* already good */
+  gap: 10px;             /* slightly more breathing space */
+
+  cursor: pointer;
+
+  line-height: 1;        /* 🔥 KEY FIX */
+}
+
+.sidebar-title:hover {
+  color: white;
+}
+
+/* icon */
+.sidebar-title img {
+  width: 18px;
+  height: 18px;
+
+  transform: translateY(1px);  /* 🔥 MICRO ALIGNMENT FIX */
+
+  opacity: 0.8;
+}
+
+/* =========================
+   COLLAPSE FIX (IMPORTANT)
+========================= */
+
+/* hide button text */
+.sidebar.collapsed .sidebar-btn span {
+  display: none;
+}
+
+/* center icons */
+.sidebar.collapsed .sidebar-btn {
+  justify-content: center;
+}
+
+/* fix padding so buttons shrink properly */
+.sidebar.collapsed .sidebar button {
+  padding: 10px;
+}
+
+
+/* =========================
+   CLEAN COLLAPSED SIDEBAR
+========================= */
+
+/* shrink layout */
+.sidebar.collapsed {
+  width: 70px;
+  padding: 20px 10px;
+  align-items: center;
+}
+
+/* hide ALL text */
+.sidebar.collapsed span {
+  display: none;
+}
+
+/* center everything */
+.sidebar.collapsed .sidebar-title,
+.sidebar.collapsed .recents-title,
+.sidebar.collapsed .sidebar-btn {
+  justify-content: center;
+}
+
+/* remove recents list */
+.sidebar.collapsed #recents {
+  display: none;
+}
+
+/* hide divider */
+.sidebar.collapsed hr {
+  display: none;
+}
+
+/* =========================
+   CHAT ICON HOVER TRANSITION
+========================= */
+
+
+/* hover → menu icon */
+.sidebar.collapsed .sidebar-title:hover #chatIcon {
+  content: url("https://img.icons8.com/?size=100&id=24AIqLkxXRY9&format=png&color=FFFFFF");
+}
+.sidebar.collapsed #recentsArrow {
+  display: none;
+}
+
+/* =========================
+   ICON TRANSITION SYSTEM
+========================= */
+
+.icon-wrapper {
+  position: relative;
+  width: 20px;
+  height: 20px;
+}
+
+/* both icons stacked */
+.icon {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* default state */
+.icon.brain {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.icon.menu {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+/* 🔥 hover effect (collapsed only) */
+.sidebar.collapsed .sidebar-title:hover .icon.brain {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.sidebar.collapsed .sidebar-title:hover .icon.menu {
+  opacity: 1;
+  transform: scale(1);
 }
