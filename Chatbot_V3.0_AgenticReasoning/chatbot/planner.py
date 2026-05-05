@@ -119,6 +119,15 @@ item_field
 ranked_items_per_section
 → returns all the ranked items in each section
 
+section_with_most_items
+→ return the section with the highest number of items
+
+top_items_by_wordcount
+→ return top items sorted by word count
+
+average_wordcount_per_section
+→ return average word count per section
+
 
 Rules:
 
@@ -138,6 +147,8 @@ Rules:
 - If the user asks about a specific property of an item (headline, score, outlet, summary, word count, page, etc) use operation "item_field".
 - If the user asks about section ordering, ordering section, where an item was placed, or which section it belongs to, use operation "item_field" and field "ordering section".
 - If the question asks whether an item is leading, lead article, or Is_Lead → use operation "item_field".
+- If question asks "highest number of articles" → use section_with_most_items
+- If question asks "top by word count" → use top_items_by_wordcount
 
 Reference Resolution Rules:
 
@@ -147,6 +158,12 @@ Reference Resolution Rules:
 - If the last discussed item ID appears in the context, reuse it.
 - If the user asks whether an item should be placed in another section,
   use operation "other_section_reasons".
+  
+IMPORTANT:
+
+- "number of articles" ALWAYS means TOTAL items, not ranked
+- "top by word count" means sort using wordCount column, NOT rank
+- "top ranked" ONLY refers to rank column
 
 Return ONLY valid JSON:
 

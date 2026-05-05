@@ -805,3 +805,35 @@ class QueryEngine:
                 )
 
         return result
+
+    def section_with_most_items(self):
+        counts = self.items_per_section()
+        best = max(counts, key=counts.get)
+        return {
+            "Section": best,
+            "Items": counts[best]
+        }
+
+    def top_items_by_wordcount(self, section=None, n=3):
+
+        df = self.df.copy()
+
+        if section:
+            col = f"{section}_answer"
+            df = df[df[col].astype(str).str.lower().isin(["yes", "true", "1"])]
+
+        df = df[df["wordCount"].notna()]
+        df = df.sort_values("wordCount", ascending=False)
+
+        top = df.head(n)
+
+        results = []
+
+        for _, row in top.iterrows():
+            results.append({
+                "Item ID": str(row[self.id_col]),
+                "Word Count": int(row["wordCount"]),
+                "Section": self.item_section(row[self.id_col])
+            })
+
+        return results

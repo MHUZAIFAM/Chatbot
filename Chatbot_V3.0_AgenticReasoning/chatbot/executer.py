@@ -94,4 +94,10 @@ class Executor:
         if op == "ranked_items_per_section":
             return self.qe.ranked_items_per_section()
 
+        if op == "section_with_most_items":
+            return self.qe.section_with_most_items()
+
+        if op == "top_items_by_wordcount":
+            return self.qe.top_items_by_wordcount(section)
+
         return None

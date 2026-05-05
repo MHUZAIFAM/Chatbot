@@ -126,6 +126,15 @@ class ChatbotAgent:
         section = plan.get("section")
         item_id = plan.get("item_id")
 
+        # ---------------------------------------
+        # SEMANTIC CORRECTION LAYER (IMPORTANT)
+        # ---------------------------------------
+        q_lower = question.lower()
+
+        if "word count" in q_lower and operation == "top_ranked_items":
+            operation = "top_items_by_wordcount"
+            plan["operation"] = operation
+
         # -------------------------------------------------
         # FIELD RECOVERY (planner sometimes misses field)
         # -------------------------------------------------
@@ -260,12 +269,27 @@ class ChatbotAgent:
                             label = field.replace("_", " ").replace("URL", "URL").title()
                             answer = f"<b>Item {item_id}</b> — {label}: {result}"
 
+
+
+
                 elif isinstance(result, dict):
+
+                    # ---------------------------------------
+                    # SECTION WITH MOST ITEMS
+                    # ---------------------------------------
+                    if operation == "section_with_most_items":
+                        section_name = self.format_section(result.get("Section"))
+                        count = result.get("Items")
+
+                        answer = f"The section with the highest number of articles is <b>{section_name}</b> with {count} items."
+
+                        self.memory.add(question, answer)
+                        return answer
 
                     # -------------------------------------------------
                     # RANKED ITEMS PER SECTION
                     # -------------------------------------------------
-                    if operation == "ranked_items_per_section":
+                    elif operation == "ranked_items_per_section":
 
                         if not result:
                             answer = "No ranked items found."
@@ -285,7 +309,7 @@ class ChatbotAgent:
 
                                 lines.append("")  # spacing
 
-                            answer = "<br>".join(lines)
+                            answer = "<b>Ranked items per section</b><br><br>" + "<br>".join(lines)
 
                     # -------------------------------------------------
                     # ITEM DETAILS
@@ -376,6 +400,29 @@ class ChatbotAgent:
                     answer = "The sections present in this dataset are:<br><br>" + "<br>".join(sections)
 
                 elif isinstance(result, list):
+
+                    # ---------------------------------------
+                    # SMART DETECTION: word count results
+                    # ---------------------------------------
+                    if (
+                            isinstance(result, list)
+                            and len(result) > 0
+                            and isinstance(result[0], dict)
+                            and "Word Count" in result[0]
+                    ):
+
+                        lines = []
+
+                        for item in result:
+                            wc = item.get("Word Count", "Unknown")
+                            lines.append(
+                                f"• <b>Item {item.get('Item ID')}</b> — {wc} words"
+                            )
+
+                        answer = "<br>".join(lines)
+
+                        self.memory.add(question, answer)
+                        return answer
 
                     if not result:
                         answer = "No items found."
