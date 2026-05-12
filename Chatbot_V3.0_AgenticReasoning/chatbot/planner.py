@@ -1,13 +1,24 @@
 import json
 import google.generativeai as genai
 
+#=================================================
+from anthropic import Anthropic
+from dotenv import load_dotenv
+import os
+import json
+
 
 class Planner:
 
     def __init__(self, api_key):
 
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-2.5-flash")
+        load_dotenv()
+
+        self.client = Anthropic(
+            api_key=os.getenv("ANTHROPIC_API_KEY")
+        )
+
+        self.model = "claude-sonnet-4-20250514"
 
     def plan(self, question, context="", sections=""):
 
@@ -177,9 +188,19 @@ Return ONLY valid JSON:
 
 """
 
-        response = self.model.generate_content(prompt)
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=1024,
+            temperature=0,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
 
-        text = response.text.strip()
+        text = response.content[0].text.strip()
 
         if text.startswith("```"):
             text = text.replace("```json", "").replace("```", "").strip()

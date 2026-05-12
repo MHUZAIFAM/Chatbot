@@ -1,14 +1,24 @@
 import json
 from google import genai
 
+#====================================================
+from anthropic import Anthropic
+from dotenv import load_dotenv
+import os
+import json
+
 
 class AnswerGenerator:
 
     def __init__(self, api_key):
 
-        self.client = genai.Client(api_key=api_key)
+        load_dotenv()
 
-        self.model = "gemini-2.5-flash"
+        self.client = Anthropic(
+            api_key=os.getenv("ANTHROPIC_API_KEY")
+        )
+
+        self.model = "claude-sonnet-4-20250514"
 
 
     # =====================================================
@@ -16,6 +26,7 @@ class AnswerGenerator:
     # =====================================================
 
     def generate(self, question, data, memory_summary):
+        safe_data = str(data)[:25000]
 
         prompt = f"""
 You are a senior data analyst working for a media monitoring and research company.
@@ -23,7 +34,7 @@ You are a senior data analyst working for a media monitoring and research compan
 Your job is to analyze dataset records and answer the user's question clearly.
 
 Dataset Records:
-{data}
+{safe_data}
 
 Conversation Summary:
 {memory_summary}
@@ -43,12 +54,19 @@ Return JSON ONLY in this format:
 {{ "answer": "" }}
 """
 
-        response = self.client.models.generate_content(
+        response = self.client.messages.create(
             model=self.model,
-            contents=prompt
+            max_tokens=2048,
+            temperature=0.3,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
         )
 
-        text = response.text.strip()
+        text = response.content[0].text.strip()
 
         if text.startswith("```"):
             text = text.replace("```json", "").replace("```", "").strip()
