@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Chatbot</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2 class="sidebar-title sidebar-btn" onclick="toggleSidebar()">
+  <div class="icon-wrapper">
+    <img class="icon brain"
+         src="https://img.icons8.com/?size=100&id=KlAC5P1TnEXu&format=png&color=FFFFFF" />
+
+    <img class="icon menu"
+         src="https://img.icons8.com/?size=100&id=24AIqLkxXRY9&format=png&color=FFFFFF" />
+  </div>
+
+  <span>Chats</span>
+</h2>
+
+<button onclick="newChat()" class="sidebar-btn">
+  <img src="https://img.icons8.com/?size=100&id=98&format=png&color=FFFFFF" />
+  <span>New chats</span>
+</button>
+
+<button onclick="searchChats()" class="sidebar-btn">
+  <img src="https://img.icons8.com/?size=100&id=2sWrwEXiaegS&format=png&color=FFFFFF" />
+  <span>Search chats</span>
+</button>
+
+    <hr>
+
+    <h3 class="recents-title">
+
+  <div class="recents-left" onclick="handleRecentsClick()">
+    <img src="https://img.icons8.com/?size=100&id=SdWYNX9NPaLL&format=png&color=FFFFFF" />
+    <span>Recents</span>
+  </div>
+
+  <img id="recentsArrow" class="arrow" onclick="toggleRecents()"
+       src="https://img.icons8.com/?size=100&id=39786&format=png&color=FFFFFF" />
+
+</h3>
+
+    <div id="recents"></div>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="chat-area">
+
+    <div class="header">Isentia Bot</div>
+
+    <!-- EMPTY STATE -->
+    <div id="emptyState" class="empty-state">
+      <h2>Ready when you are!</h2>
+
+      <div class="prompt-bar center">
+        <input id="inputCenter" placeholder="Ask anything..." />
+        <button onclick="sendMessageCenter()">➤</button>
+      </div>
+    </div>
+
+    <!-- CHAT MODE -->
+    <div id="chatContainer" class="chat-container hidden">
+
+      <div id="messages" class="messages"></div>
+
+      <div class="prompt-bar bottom">
+        <input id="inputBottom" placeholder="Ask anything..." />
+        <button id="sendBtn" onclick="handleSend()">➤</button>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
