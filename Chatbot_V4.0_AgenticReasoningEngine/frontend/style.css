@@ -73,6 +73,8 @@ textarea { font-family: inherit; }
 
 .sidebar.collapsed {
   width: var(--sidebar-collapsed);
+  padding: 12px 6px;
+  align-items: center;
 }
 
 
@@ -122,10 +124,19 @@ textarea { font-family: inherit; }
 .sidebar-logo {
   font-weight: 600;
   font-size: 15px;
-  color: var(--text);
   white-space: nowrap;
   opacity: 1;
   transition: opacity var(--transition);
+  background: linear-gradient(135deg, #ffffff 0%, #a5a8ff 40%, #ffffff 60%, #c4b5fd 100%);
+  background-size: 250% 250%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 5s ease-in-out infinite;
+}
+
+.icon-wrapper img {
+  filter: drop-shadow(0 0 5px rgba(165,168,255,0.5));
 }
 
 .sidebar.collapsed .sidebar-logo {
@@ -137,6 +148,8 @@ textarea { font-family: inherit; }
 
 .sidebar.collapsed .sidebar-header {
   justify-content: center;
+  padding: 6px 6px 10px;
+  width: 100%;
 }
 
 
@@ -192,7 +205,9 @@ textarea { font-family: inherit; }
 
 .sidebar.collapsed .sidebar-action {
   justify-content: center;
-  padding: 8px;
+  padding: 10px;
+  width: 44px;
+  border-radius: var(--radius-sm);
 }
 
 
@@ -213,12 +228,50 @@ textarea { font-family: inherit; }
   cursor: pointer;
 }
 
+.sidebar-action:hover svg {
+  stroke: url(#shimmer-grad);
+}
+
+.sidebar-action:hover span,
+.new-chat-btn:hover span {
+  background: linear-gradient(135deg, #ffffff 0%, #a5a8ff 40%, #ffffff 60%, #c4b5fd 100%);
+  background-size: 250% 250%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.sidebar-action svg,
+.search-btn svg {
+  transition: color var(--transition);
+}
+
+.sidebar-action:hover svg {
+  color: #a5a8ff;
+  filter: drop-shadow(0 0 4px rgba(165,168,255,0.6));
+}
+
+.new-chat-btn svg {
+  color: var(--text-2);
+}
+
+.new-chat-btn:hover svg {
+  color: #a5a8ff;
+  filter: drop-shadow(0 0 4px rgba(165,168,255,0.6));
+}
+
 .recents-label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-3);
+  background: linear-gradient(135deg, #ffffff 0%, #a5a8ff 40%, #ffffff 60%, #c4b5fd 100%);
+  background-size: 250% 250%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 5s ease-in-out infinite;
   white-space: nowrap;
   transition: opacity var(--transition);
 }
