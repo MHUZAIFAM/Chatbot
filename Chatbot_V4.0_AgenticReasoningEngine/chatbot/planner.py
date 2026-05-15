@@ -41,143 +41,68 @@ If the user mentions a section, extract it exactly as written.
 
 Available operations:
 
-count_items
-→ return the total number of items in the dataset.
+count_items → total dataset items
+count_sections → total sections
+items_per_section → item counts per section
 
-count_sections
-→ return the total number of sections in the dataset.
+count_ranked_items → ranked item count
+count_unranked_items → unranked item count
+count_unselected_items → unselected item count
 
-items_per_section
-→ return the number of items assigned to each section.
+count_items_in_section → items in section
+count_ranked_items_in_section → ranked items in section
+count_ranked_items_per_section → ranked counts per section
+unranked_items_per_section → unranked counts per section
 
-count_ranked_items
-→ return the total number of ranked items (Rank is not null).
+highest_ranked → best ranked items
+lowest_ranked → lowest ranked items
+highest_ranked_section → best ranked in section
+lowest_ranked_section → lowest ranked in section
+top_ranked_items → top ranked items
 
-count_ranked_items_in_section
-→ return the number of ranked items inside a specific section.
+section_with_most_items → section with most items
+section_with_most_ranked → section with most ranked items
+average_rank_per_section → average rank per section
 
-count_unranked_items
-→ return the total number of unranked items (Rank is null).
+list_sections → list sections
+items_in_section → list items in section
+ranked_items_per_section → ranked items grouped by section
+unselected_items → list unselected items
 
-count_unselected_items
-→ return the number of items that were not selected for any section.
+item_rank → item rank
+item_section → item section
+item_details → item details
+item_field → specific item field
 
-unselected_items
-→ return a list of items that were not selected for any section.
+selected_reason → why item selected
+other_section_reasons → why not placed elsewhere
+unselected_reasons → why item unselected
 
-highest_ranked
-→ return the highest ranked item(s) in the dataset (lowest numerical rank).
-
-lowest_ranked
-→ return the lowest ranked item(s) in the dataset (highest numerical rank).
-
-highest_ranked_section
-→ return the highest ranked item within a specific section.
-
-lowest_ranked_section
-→ return the lowest ranked item within a specific section.
-
-item_rank
-→ return the rank of a specific item using its item ID.
-
-item_section
-→ return the section where a specific item was placed.
-
-list_sections
-→ return all available sections in the dataset.
-
-section_with_most_ranked
-→ return the section that contains the most ranked items.
-
-top_ranked_items
-→ return the top ranked items sorted by rank.
-
-average_rank_per_section
-→ return the average rank of items within each section.
-
-count_ranked_items_per_section
-→ return the number of ranked items inside each section.
-
-unranked_items_per_section
-→ return the number of unranked items within each section.
-
-items_in_section
-→ return all items in a section along with their ranks.
-
-selected_reason
-→ return the dataset reason explaining why an item was placed in its selected section.
-
-other_section_reasons
-→ return the dataset reasons explaining why the item was NOT placed in other sections.
-
-unselected_reasons
-→ return the dataset reasons explaining why the item was not selected for any section.
-
-item_details
-→ return full details about a specific item including:
-Item ID, Date, Page, Section, Rank and selection reason.
-
-count_items_in_section
-→ return the number of items in a specific section.
-
-item_field
-→ return a specific dataset field for an item
-
-ranked_items_per_section
-→ returns all the ranked items in each section
-
-section_with_most_items
-→ return the section with the highest number of items
-
-top_items_by_wordcount
-→ return top items sorted by word count
-
-filter_items
-→ dynamically filter items using conditions, sorting and limits
-
-average_wordcount_per_section
-→ return average word count per section
-
+filter_items → dynamic filtering
 
 Rules:
 
-- If the question asks to COUNT items → use a counting operation.
-- If the question asks to LIST or SHOW items inside a section → always use "items_in_section".
-- If the question asks to LIST items in a section → use items_in_section.
-- If the question mentions an item ID → fill "item_id".
-- If the question mentions a section → fill "section".
-- If no operation matches → return "unknown".
-- If the user asks WHY an item was placed in a section → use "selected_reason".
-- If the user asks why an item was not placed in other sections or asks why it was not placed elsewhere → use "other_section_reasons".
-- If the item was unselected and the user asks WHY → use "unselected_reasons".
-- If the question asks "how many ranked items in <section>" → use "count_ranked_items_in_section".
-- If the user asks for details, information, or description about an item → use "item_details".
-- If the user asks to LIST or SHOW unselected items → use "unselected_items".
-- If the question asks "How many items in <section>" → use count_items_in_section
-- If the user asks about a specific property of an item (headline, score, outlet, summary, word count, page, etc) use operation "item_field".
-- If the user asks about section ordering, ordering section, where an item was placed, or which section it belongs to, use operation "item_field" and field "ordering section".
-- If the question asks whether an item is leading, lead article, or Is_Lead → use operation "item_field".
-- If question asks "highest number of articles" → use section_with_most_items
-- If question asks "top by word count" → use top_items_by_wordcount
-- If the question asks for items above/below a numeric threshold, use "filter_items".
-- If the question asks to filter using word count, score, rank or other fields, use "filter_items".
-- If the question asks for articles containing certain words, use "filter_items".
-- Use filters for dynamic conditions instead of hardcoded operations whenever possible.
+- count questions → counting operations
+- list/show section items → items_in_section
+- item IDs → fill item_id
+- section names → fill section
+- item details/info → item_details
+- item properties/headline/score/page/etc → item_field
+- placement/ordering section questions → item_field with field "ordering section"
 
-Reference Resolution Rules:
+- why selected → selected_reason
+- why not elsewhere → other_section_reasons
+- why unselected → unselected_reasons
 
-- The conversation context may contain previously discussed items.
-- If the user uses pronouns like "it", "this item", "that item", or "there",
-  resolve the reference using the conversation context.
-- If the last discussed item ID appears in the context, reuse it.
-- If the user asks whether an item should be placed in another section,
-  use operation "other_section_reasons".
-  
-IMPORTANT:
+- highest number of articles → section_with_most_items
+- ranked item counts in section → count_ranked_items_in_section
 
-- "number of articles" ALWAYS means TOTAL items, not ranked
-- "top by word count" means sort using wordCount column, NOT rank
-- "top ranked" ONLY refers to rank column
+- filtering/above/below/contains → filter_items
+
+- "number of articles" means TOTAL items
+- "top ranked" refers to rank column
+
+- unknown intent → operation "unknown"
 
 Return ONLY valid JSON:
 
@@ -190,66 +115,6 @@ Return ONLY valid JSON:
  "sort_by": "",
  "ascending": false,
  "limit": 10
-}}
-
-
-Examples:
-
-Question:
-Find articles with word count above 800
-
-Output:
-{{
-  "operation": "filter_items",
-  "section": "",
-  "filters": [
-    {{
-      "field": "wordCount",
-      "operator": ">",
-      "value": 800
-    }}
-  ],
-  "sort_by": "wordCount",
-  "ascending": false,
-  "limit": 10
-}}
-
-Question:
-Find healthcare articles with score above 0.8
-
-Output:
-{{
-  "operation": "filter_items",
-  "section": "health_care_industry",
-  "filters": [
-    {{
-      "field": "Score",
-      "operator": ">",
-      "value": 0.8
-    }}
-  ],
-  "sort_by": "Score",
-  "ascending": false,
-  "limit": 10
-}}
-
-Question:
-Find articles containing diabetes
-
-Output:
-{{
-  "operation": "filter_items",
-  "section": "",
-  "filters": [
-    {{
-      "field": "Headline",
-      "operator": "contains",
-      "value": "diabetes"
-    }}
-  ],
-  "sort_by": "",
-  "ascending": false,
-  "limit": 10
 }}
 
 """

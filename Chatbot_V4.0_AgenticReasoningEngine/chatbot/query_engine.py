@@ -56,9 +56,6 @@ FIELD_MAP = {
     "summary": "Summary",
     "article summary": "Summary",
 
-    "word count": "wordCount",
-    "wordcount": "wordCount",
-    "words": "wordCount",
 
     # -------------------------
     # Story Grouping
@@ -694,7 +691,6 @@ class QueryEngine:
             "Headline": row.get("Headline"),
             "Date": row.get("Date"),
             "Media Outlet": row.get("Media Outlet"),
-            "Word Count": row.get("wordCount"),
             "Page": row.get("Page Number"),
             "Rank": rank,
             "Score": row.get("Score"),
@@ -814,31 +810,6 @@ class QueryEngine:
             "Items": counts[best]
         }
 
-    def top_items_by_wordcount(self, section=None, n=3):
-
-        df = self.df.copy()
-
-        if section:
-            col = f"{section}_answer"
-            df = df[df[col].astype(str).str.lower().isin(["yes", "true", "1"])]
-
-        df = df[df["wordCount"].notna()]
-        df = df.sort_values("wordCount", ascending=False)
-
-        top = df.head(n)
-
-        results = []
-
-        for _, row in top.iterrows():
-            results.append({
-                "Item ID": str(row[self.id_col]),
-                "Word Count": int(row["wordCount"]),
-                "Section": self.item_section(row[self.id_col])
-            })
-
-        return results
-
-
     # =====================================================
     # GENERIC FILTER ENGINE
     # =====================================================
@@ -940,7 +911,6 @@ class QueryEngine:
             results.append({
                 "Item ID": str(row[self.id_col]),
                 "Headline": row.get("Headline"),
-                "Word Count": row.get("wordCount"),
                 "Score": row.get("Score"),
                 "Section": self.item_section(row[self.id_col])
             })

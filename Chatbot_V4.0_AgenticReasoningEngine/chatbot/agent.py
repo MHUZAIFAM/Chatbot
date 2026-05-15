@@ -96,6 +96,45 @@ class ChatbotAgent:
         print("ASK FUNCTION TRIGGERED", flush=True)
         print("QUESTION:", question, flush=True)
 
+        # -------------------------------------------------
+        # DETERMINISTIC REFERENCE RESOLUTION
+        # -------------------------------------------------
+
+        q_lower = question.lower()
+
+        if self.memory.last_item:
+
+            reference_phrases = [
+                "this item",
+                "that item",
+                "this article",
+                "that article",
+                "tell me about it",
+                "tell me about this",
+                "where was it placed",
+                "why was it placed there",
+                "why was it selected"
+            ]
+
+            if any(p in q_lower for p in reference_phrases):
+
+                item_id_ref = str(self.memory.last_item)
+
+                replacements = {
+                    "this item": item_id_ref,
+                    "that item": item_id_ref,
+                    "this article": item_id_ref,
+                    "that article": item_id_ref,
+                    "it": item_id_ref
+                }
+
+                for old, new in replacements.items():
+                    question = re.sub(
+                        rf"\b{re.escape(old)}\b",
+                        new,
+                        question,
+                        flags=re.IGNORECASE
+                    )
 
         # 1️⃣ Planner decides what tool to use
         sections = ", ".join(self.dataset.sections)
@@ -125,15 +164,6 @@ class ChatbotAgent:
         operation = plan.get("operation")
         section = plan.get("section")
         item_id = plan.get("item_id")
-
-        # ---------------------------------------
-        # SEMANTIC CORRECTION LAYER (IMPORTANT)
-        # ---------------------------------------
-        q_lower = question.lower()
-
-        if "word count" in q_lower and operation == "top_ranked_items":
-            operation = "top_items_by_wordcount"
-            plan["operation"] = operation
 
         # -------------------------------------------------
         # FIELD RECOVERY (planner sometimes misses field)
@@ -358,13 +388,6 @@ class ChatbotAgent:
                         add("Headline", result.get("Headline"))
                         add("Media Outlet", result.get("Media Outlet"))
                         add("Date", date)
-                        wc = result.get("Word Count")
-                        if wc:
-                            try:
-                                wc = int(float(wc))
-                            except:
-                                pass
-                        add("Word Count", wc)
                         add("Page", page)
                         add("Rank", rank_text)
                         add("Score", result.get("Score"))
@@ -418,14 +441,12 @@ class ChatbotAgent:
 
                                 item_id = item.get("Item ID", "Unknown")
                                 headline = item.get("Headline", "No headline")
-                                wc = item.get("Word Count", "Unknown")
                                 score = item.get("Score", "Unknown")
                                 sec = self.format_section(item.get("Section"))
 
                                 lines.append(
                                     f"• <b>{item_id}</b><br>"
                                     f"Headline: {headline}<br>"
-                                    f"Word Count: {wc}<br>"
                                     f"Score: {score}<br>"
                                     f"Section: {sec}<br>"
                                 )
@@ -434,29 +455,6 @@ class ChatbotAgent:
                                 f"<b>Filtered Results ({len(result)} items)</b><br><br>"
                                 + "<br>".join(lines)
                             )
-
-                        self.memory.add(question, answer)
-                        return answer
-
-                    # ---------------------------------------
-                    # SMART DETECTION: word count results
-                    # ---------------------------------------
-                    if (
-                            isinstance(result, list)
-                            and len(result) > 0
-                            and isinstance(result[0], dict)
-                            and "Word Count" in result[0]
-                    ):
-
-                        lines = []
-
-                        for item in result:
-                            wc = item.get("Word Count", "Unknown")
-                            lines.append(
-                                f"• <b>Item {item.get('Item ID')}</b> — {wc} words"
-                            )
-
-                        answer = "<br>".join(lines)
 
                         self.memory.add(question, answer)
                         return answer

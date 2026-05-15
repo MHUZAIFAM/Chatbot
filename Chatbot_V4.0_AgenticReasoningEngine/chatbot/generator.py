@@ -29,7 +29,7 @@ class AnswerGenerator:
         safe_data = str(data)[:25000]
 
         prompt = f"""
-You are a senior data analyst working for a media monitoring and research company.
+Answer using ONLY the dataset records provided.
 
 Your job is to analyze dataset records and answer the user's question clearly.
 
@@ -47,7 +47,6 @@ Instructions:
 - Use ONLY the dataset records provided.
 - Do NOT invent information.
 - If the dataset does not contain the answer, say so.
-- Provide a clear natural language answer.
 
 Return JSON ONLY in this format:
 

@@ -41,7 +41,7 @@ class ConversationMemory:
         for item in self.history:
 
             q = item["question"]
-            a = item["answer"][:500]   # prevent long prompts
+            a = item["answer"][:150]
 
             summary_text += f"User: {q}\n"
             summary_text += f"Assistant: {a}\n\n"

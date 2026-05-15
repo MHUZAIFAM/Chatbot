@@ -97,9 +97,6 @@ class Executor:
         if op == "section_with_most_items":
             return self.qe.section_with_most_items()
 
-        if op == "top_items_by_wordcount":
-            return self.qe.top_items_by_wordcount(section)
-
         if op == "filter_items":
 
             return self.qe.filter_items(
