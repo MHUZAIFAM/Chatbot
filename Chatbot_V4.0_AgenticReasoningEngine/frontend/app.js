@@ -1,38 +1,84 @@
-const emptyState = document.getElementById("emptyState");
-const chatContainer = document.getElementById("chatContainer");
-const messages = document.getElementById("messages");
-const recentsContainer = document.getElementById("recents");
+/* =========================
+   STATE
+========================= */
+const emptyState      = document.getElementById("emptyState");
+const chatContainer   = document.getElementById("chatContainer");
+const messages        = document.getElementById("messages");
+const recentsContainer= document.getElementById("recents");
+const inputCenter     = document.getElementById("inputCenter");
+const inputBottom     = document.getElementById("inputBottom");
 
-const inputCenter = document.getElementById("inputCenter");
-const inputBottom = document.getElementById("inputBottom");
-
-let chats = [];
-let currentChat = [];
-
-let started = false;
+let chats          = [];
+let currentChat    = [];
+let started        = false;
 let isExistingChat = false;
-let activeChatIndex = null;
-
-/* 🔥 NEW STATE (STOP FEATURE) */
-let isGenerating = false;
-let controller = null;
+let activeChatIndex= null;
+let isGenerating   = false;
+let controller     = null;
+let recentsVisible = true;
 
 
 /* =========================
-   CLEAN HTML (format bot output)
+   AUTO-RESIZE TEXTAREA
 ========================= */
-function cleanHTML(html) {
-  return html
-    .replace(/<br>/g, "\n")
-    .split("\n")
-    .filter(line => line.trim() !== "")
-    .map(line => `<div>${line}</div>`)
-    .join("");
+function autoResize(el) {
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight, 160) + "px";
 }
 
 
 /* =========================
-   SWITCH TO CHAT MODE
+   KEYBOARD HANDLERS
+========================= */
+function handleCenterKey(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessageCenter();
+  }
+}
+
+function handleBottomKey(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    handleSend();
+  }
+}
+
+
+
+/* =========================
+   FORMAT BOT RESPONSE
+========================= */
+function formatResponse(text) {
+  // Server sends HTML strings — normalize <br> tags to real line breaks,
+  // then re-render with styled wrappers for bullets and spacing
+
+  let html = text;
+
+  // Normalize all <br> variants to newline
+  html = html.replace(/<br\s*\/?>/gi, "\n");
+
+  // Split into lines and build styled output
+  const lines = html.split("\n");
+  let result = "";
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line === "") {
+      result += '<div class="resp-spacer"></div>';
+    } else if (line.startsWith("•")) {
+      result += `<div class="resp-bullet">${line.slice(1).trim()}</div>`;
+    } else {
+      result += `<div class="resp-line">${line}</div>`;
+    }
+  }
+
+  return result;
+}
+
+
+/* =========================
+   START CHAT
 ========================= */
 function startChat() {
   if (!started) {
@@ -44,7 +90,7 @@ function startChat() {
 
 
 /* =========================
-   HANDLE SEND / STOP BUTTON
+   SEND / STOP TOGGLE
 ========================= */
 function handleSend() {
   if (isGenerating) {
@@ -56,140 +102,131 @@ function handleSend() {
 
 
 /* =========================
-   SEND (CENTER INPUT)
+   SEND (CENTER)
 ========================= */
 function sendMessageCenter() {
   const text = inputCenter.value.trim();
   if (!text) return;
-
   startChat();
   inputCenter.value = "";
-
+  inputCenter.style.height = "auto";
   handleMessage(text);
 }
 
 
 /* =========================
-   SEND (BOTTOM INPUT)
+   SEND (BOTTOM)
 ========================= */
 function sendMessageBottom() {
   const text = inputBottom.value.trim();
   if (!text) return;
-
   inputBottom.value = "";
+  inputBottom.style.height = "auto";
   handleMessage(text);
 }
 
 
 /* =========================
-   CORE MESSAGE LOGIC (UPDATED)
+   CORE MESSAGE HANDLER
 ========================= */
 async function handleMessage(text) {
 
-  // ✅ CREATE CHAT IF FIRST MESSAGE
+  // Ensure chat UI is visible
+  startChat();
+
+  // Create new chat slot if first message
   if (!isExistingChat && currentChat.length === 0) {
-    chats.unshift([]);              // create new chat
-    activeChatIndex = 0;            // mark as active
+    chats.unshift([]);
+    activeChatIndex = 0;
     isExistingChat = true;
   }
 
-  // 🔹 Add user message
+  // Render user bubble
   addMessage(text, "user");
   currentChat.push({ type: "user", text });
-
-  // 🔥 UPDATE SIDEBAR IMMEDIATELY
   chats[activeChatIndex] = [...currentChat];
   renderRecents();
 
-  // 🔹 Switch to generating mode
+  // Switch to generating
   isGenerating = true;
-  updateButton();
+  updateSendBtn();
 
-  // 🔹 Bot typing placeholder
-  const loading = addMessage("", "bot");
-  loading.classList.add("typing");
+  // Typing indicator
+  const loadingBubble = addTypingIndicator();
 
   controller = new AbortController();
 
   try {
     const res = await fetch("http://127.0.0.1:8001/ask", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question: text }),
       signal: controller.signal
     });
 
     const data = await res.json();
 
-    // 🔥 If stopped → ignore result
     if (!isGenerating) return;
 
-    loading.classList.remove("typing");
-    loading.innerHTML = cleanHTML(data.answer);
+    loadingBubble.parentElement.remove(); // remove the whole row
+    const botBubble = addMessage(data.answer, "bot");
 
-    // 🔥 scroll twice to ensure full render
     scrollToBottom();
-    setTimeout(scrollToBottom, 50);
+    setTimeout(scrollToBottom, 60);
 
     currentChat.push({ type: "bot", text: data.answer });
-
-    // Update existing chat
     if (isExistingChat && activeChatIndex !== null) {
       chats[activeChatIndex] = [...currentChat];
     }
 
   } catch (err) {
-    loading.classList.remove("typing");
+    loadingBubble.parentElement.remove();
 
     if (err.name === "AbortError") {
-      loading.innerHTML = "⛔ Stopped";
+      addStatusMessage("Generation stopped.");
     } else {
-      loading.innerHTML = "Error connecting to server.";
+      addStatusMessage("⚠ Could not reach the server.");
     }
   }
 
   isGenerating = false;
-  updateButton();
+  updateSendBtn();
 }
 
 
 /* =========================
-   STOP GENERATION
+   STOP
 ========================= */
 function stopGeneration() {
-  if (controller) {
-    controller.abort();
-  }
-
+  if (controller) controller.abort();
   isGenerating = false;
-  updateButton();
+  updateSendBtn();
 }
 
 
 /* =========================
-   BUTTON UI UPDATE
+   BUTTON STATE
 ========================= */
-function updateButton() {
+function updateSendBtn() {
   const btn = document.getElementById("sendBtn");
-
+  const icon = document.getElementById("sendIcon");
   if (!btn) return;
 
   if (isGenerating) {
-    btn.innerHTML = `<div class="stop-icon"></div>`;
-    btn.style.background = "#b33a3a";
-    btn.style.borderRadius = "12px";
+    btn.classList.add("stop");
+    btn.innerHTML = `<div class="stop-square"></div>`;
   } else {
-    btn.innerHTML = "➤";
-    btn.style.background = "#3b36b3";
-    btn.style.borderRadius = "50%";
+    btn.classList.remove("stop");
+    btn.innerHTML = `
+      <svg id="sendIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+      </svg>`;
   }
 }
 
 
 /* =========================
-   ADD MESSAGE TO UI
+   ADD USER / BOT MESSAGE
 ========================= */
 function addMessage(text, type) {
   const row = document.createElement("div");
@@ -198,13 +235,64 @@ function addMessage(text, type) {
   const bubble = document.createElement("div");
   bubble.classList.add("bubble");
 
-  bubble.innerHTML = cleanHTML(text);
+  if (type === "bot") {
+    bubble.innerHTML = formatResponse(text);
+  } else {
+    bubble.textContent = text;
+  }
 
   row.appendChild(bubble);
   messages.appendChild(row);
   scrollToBottom();
-
   return bubble;
+}
+
+
+/* =========================
+   TYPING INDICATOR
+========================= */
+function addTypingIndicator() {
+  const row = document.createElement("div");
+  row.classList.add("message-row", "bot");
+
+  const bubble = document.createElement("div");
+  bubble.classList.add("bubble");
+  bubble.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+
+  row.appendChild(bubble);
+  messages.appendChild(row);
+  scrollToBottom();
+  return bubble;
+}
+
+
+/* =========================
+   STATUS MESSAGE
+========================= */
+function addStatusMessage(text) {
+  const row = document.createElement("div");
+  row.style.cssText = "display:flex;justify-content:center;padding:6px 0;";
+
+  const el = document.createElement("div");
+  el.style.cssText = "font-size:12px;color:#555;background:#161616;border:1px solid #1f1f1f;padding:4px 12px;border-radius:99px;";
+  el.textContent = text;
+
+  row.appendChild(el);
+  messages.appendChild(row);
+  scrollToBottom();
+}
+
+
+/* =========================
+   SCROLL
+========================= */
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    const container = document.getElementById("chatContainer");
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    }
+  });
 }
 
 
@@ -212,7 +300,6 @@ function addMessage(text, type) {
    NEW CHAT
 ========================= */
 function newChat() {
-
   if (currentChat.length > 0 && !isExistingChat) {
     chats.unshift([...currentChat]);
   }
@@ -240,19 +327,14 @@ function renderRecents() {
   chats.forEach((chat, index) => {
     const div = document.createElement("div");
     div.classList.add("recent-item");
-
-    if (index === activeChatIndex) {
-      div.classList.add("active");
-    }
+    if (index === activeChatIndex) div.classList.add("active");
 
     const first = chat.find(m => m.type === "user");
-
-    div.innerText = first
-      ? first.text.slice(0, 30) + (first.text.length > 30 ? "..." : "")
+    div.textContent = first
+      ? first.text.slice(0, 32) + (first.text.length > 32 ? "…" : "")
       : "New Chat";
 
     div.onclick = () => loadChat(index);
-
     recentsContainer.appendChild(div);
   });
 }
@@ -267,10 +349,7 @@ function loadChat(index) {
   isExistingChat = true;
 
   messages.innerHTML = "";
-
-  currentChat.forEach(msg => {
-    addMessage(msg.text, msg.type);
-  });
+  currentChat.forEach(msg => addMessage(msg.text, msg.type));
 
   startChat();
   renderRecents();
@@ -289,78 +368,42 @@ function searchChats() {
    SIDEBAR TOGGLE
 ========================= */
 function toggleSidebar() {
-  const sidebar = document.querySelector(".sidebar");
-  const chatArea = document.querySelector(".chat-area");
-  const recents = document.getElementById("recents");
-  const arrow = document.getElementById("recentsArrow");
-
+  const sidebar = document.getElementById("sidebar");
   const collapsed = sidebar.classList.toggle("collapsed");
-  chatArea.classList.toggle("sidebar-collapsed");
 
-  // 🔥 WHEN COLLAPSING → ALWAYS RESET RECENTS
   if (collapsed) {
-    recents.style.display = "none";
-    arrow.classList.add("rotated");
+    recentsContainer.style.display = "none";
+    document.getElementById("recentsArrow")?.classList.add("rotated");
     recentsVisible = false;
   }
 }
 
 
 /* =========================
-   ENTER KEY
+   RECENTS TOGGLE
 ========================= */
-inputCenter.addEventListener("keypress", function (e) {
-  if (e.key === "Enter") sendMessageCenter();
-});
-
-inputBottom.addEventListener("keypress", function (e) {
-  if (e.key === "Enter") handleSend();
-});
-
-let recentsVisible = true;
-
 function toggleRecents() {
-  const recents = document.getElementById("recents");
+  recentsVisible = !recentsVisible;
   const arrow = document.getElementById("recentsArrow");
 
-  recentsVisible = !recentsVisible;
-
   if (recentsVisible) {
-    recents.style.display = "flex";
-    arrow.classList.remove("rotated");
+    recentsContainer.style.display = "flex";
+    arrow?.classList.remove("rotated");
   } else {
-    recents.style.display = "none";
-    arrow.classList.add("rotated");
+    recentsContainer.style.display = "none";
+    arrow?.classList.add("rotated");
   }
 }
 
 function handleRecentsClick() {
-  const sidebar = document.querySelector(".sidebar");
-  const recents = document.getElementById("recents");
-  const arrow = document.getElementById("recentsArrow");
+  const sidebar = document.getElementById("sidebar");
 
-  // ✅ If collapsed → open sidebar + expand recents
   if (sidebar.classList.contains("collapsed")) {
     sidebar.classList.remove("collapsed");
-
-    recents.style.display = "flex";
-    arrow.classList.remove("rotated");
-
+    recentsContainer.style.display = "flex";
+    document.getElementById("recentsArrow")?.classList.remove("rotated");
     recentsVisible = true;
   } else {
-    // otherwise just toggle
     toggleRecents();
   }
-}
-
-function scrollToBottom() {
-  const messages = document.getElementById("messages");
-
-  // 🔥 wait for DOM render
-  requestAnimationFrame(() => {
-    messages.scrollTo({
-      top: messages.scrollHeight,
-      behavior: "smooth"
-    });
-  });
 }

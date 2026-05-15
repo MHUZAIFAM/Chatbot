@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Chatbot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Isentia AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -10,75 +13,93 @@
 <div class="app">
 
   <!-- Sidebar -->
-  <div class="sidebar">
-    <h2 class="sidebar-title sidebar-btn" onclick="toggleSidebar()">
-  <div class="icon-wrapper">
-    <img class="icon brain"
-         src="https://img.icons8.com/?size=100&id=KlAC5P1TnEXu&format=png&color=FFFFFF" />
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header" onclick="toggleSidebar()" title="Toggle sidebar">
+      <div class="icon-wrapper">
+        <img class="icon brain"
+             src="https://img.icons8.com/?size=100&id=KlAC5P1TnEXu&format=png&color=FFFFFF" />
+        <img class="icon menu"
+             src="https://img.icons8.com/?size=100&id=24AIqLkxXRY9&format=png&color=FFFFFF" />
+      </div>
+      <span class="sidebar-logo">Chats</span>
+    </div>
 
-    <img class="icon menu"
-         src="https://img.icons8.com/?size=100&id=24AIqLkxXRY9&format=png&color=FFFFFF" />
-  </div>
+    <button class="new-chat-btn sidebar-action" onclick="newChat()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>New chat</span>
+    </button>
 
-  <span>Chats</span>
-</h2>
+    <button class="search-btn sidebar-action" onclick="searchChats()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <span>Search</span>
+    </button>
 
-<button onclick="newChat()" class="sidebar-btn">
-  <img src="https://img.icons8.com/?size=100&id=98&format=png&color=FFFFFF" />
-  <span>New chats</span>
-</button>
-
-<button onclick="searchChats()" class="sidebar-btn">
-  <img src="https://img.icons8.com/?size=100&id=2sWrwEXiaegS&format=png&color=FFFFFF" />
-  <span>Search chats</span>
-</button>
-
-    <hr>
-
-    <h3 class="recents-title">
-
-  <div class="recents-left" onclick="handleRecentsClick()">
-    <img src="https://img.icons8.com/?size=100&id=SdWYNX9NPaLL&format=png&color=FFFFFF" />
-    <span>Recents</span>
-  </div>
-
-  <img id="recentsArrow" class="arrow" onclick="toggleRecents()"
-       src="https://img.icons8.com/?size=100&id=39786&format=png&color=FFFFFF" />
-
-</h3>
-
-    <div id="recents"></div>
-  </div>
+    <div class="recents-section">
+      <div class="recents-header" onclick="handleRecentsClick()">
+        <span class="recents-label">Recents</span>
+        <button class="arrow-btn" id="recentsArrow" onclick="event.stopPropagation(); toggleRecents()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+      </div>
+      <div id="recents" class="recents-list"></div>
+    </div>
+  </aside>
 
   <!-- Chat Area -->
-  <div class="chat-area">
+  <main class="chat-area" id="chatArea">
 
-    <div class="header">Isentia Bot</div>
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="model-badge">
+        <span class="model-indicator"></span>
+        Isentia Bot
+      </div>
+    </div>
 
     <!-- EMPTY STATE -->
     <div id="emptyState" class="empty-state">
-      <h2>Ready when you are!</h2>
+      <div class="empty-inner">
+        <div class="empty-glow"></div>
+        <h1 class="empty-title">What's on your mind?</h1>
+        <p class="empty-sub">Ask me anything — I'm here to help.</p>
 
-      <div class="prompt-bar center">
-        <input id="inputCenter" placeholder="Ask anything..." />
-        <button onclick="sendMessageCenter()">➤</button>
+        <div class="input-wrap center-input">
+          <textarea id="inputCenter" placeholder="Message Isentia..." rows="1" oninput="autoResize(this)" onkeydown="handleCenterKey(event)"></textarea>
+          <button class="send-btn" onclick="sendMessageCenter()" id="sendBtnCenter">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+            </svg>
+          </button>
+        </div>
+
+
       </div>
     </div>
 
     <!-- CHAT MODE -->
     <div id="chatContainer" class="chat-container hidden">
-
       <div id="messages" class="messages"></div>
 
-      <div class="prompt-bar bottom">
-        <input id="inputBottom" placeholder="Ask anything..." />
-        <button id="sendBtn" onclick="handleSend()">➤</button>
+      <div class="input-area">
+        <div class="input-wrap bottom-input">
+          <textarea id="inputBottom" placeholder="Message Isentia..." rows="1" oninput="autoResize(this)" onkeydown="handleBottomKey(event)"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="handleSend()">
+            <svg id="sendIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+            </svg>
+          </button>
+        </div>
+        <p class="input-hint">Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</p>
       </div>
-
     </div>
 
-  </div>
-
+  </main>
 </div>
 
 <script src="app.js"></script>
