@@ -98,150 +98,6 @@ class QueryEngine:
 
         self.sections = dataset_manager.sections
 
-    # =====================================================
-    # DATASET LEVEL
-    # =====================================================
-
-    def count_items(self):
-
-        return len(self.df)
-
-
-    def count_sections(self):
-
-        return len(self.sections)
-
-
-    def list_sections(self):
-
-        return self.sections
-
-
-    # =====================================================
-    # SECTION LEVEL
-    # =====================================================
-
-    def count_items_in_section(self, section):
-
-        col = f"{section}_answer"
-
-        if col not in self.df.columns:
-            return None
-
-        section_df = self.df[
-            self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
-        ]
-
-        return len(section_df)
-
-
-    def items_per_section(self):
-
-        counts = {}
-
-        for sec in self.sections:
-
-            col = f"{sec}_answer"
-
-            if col in self.df.columns:
-
-                count = len(
-                    self.df[
-                        self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
-                    ]
-                )
-
-                counts[sec] = count
-
-        return counts
-
-    def section_with_most_ranked(self):
-
-        counts = {}
-
-        for sec in self.sections:
-            counts[sec] = self.count_ranked_items_in_section(sec)
-
-        best_section = max(counts, key=counts.get)
-
-        return {
-            "Section": best_section,
-            "Ranked Items": counts[best_section]
-        }
-
-    def top_ranked_items(self, n=3):
-
-        ranked_df = self.df[self.df[self.rank_col].notna()]
-
-        ranked_df = ranked_df.sort_values(self.rank_col)
-
-        top = ranked_df.head(n)
-
-        results = []
-
-        for _, row in top.iterrows():
-            item_id = str(row[self.id_col])
-            rank = int(row[self.rank_col])
-            section = self.item_section(item_id)
-
-            results.append({
-                "Item ID": item_id,
-                "Rank": rank,
-                "Section": section
-            })
-
-        return results
-
-    def average_rank_per_section(self):
-
-        averages = {}
-
-        for sec in self.sections:
-
-            col = f"{sec}_answer"
-
-            if col not in self.df.columns:
-                continue
-
-            section_df = self.df[
-                self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"]) &
-                (self.df[self.rank_col].notna())
-                ]
-
-            if section_df.empty:
-                averages[sec] = None
-            else:
-                averages[sec] = float(section_df[self.rank_col].mean())
-
-        return averages
-
-
-    # =====================================================
-    # RANKING COUNTS
-    # =====================================================
-
-    def count_ranked_items(self):
-
-        ranked = self.df[self.df[self.rank_col].notna()]
-
-        return len(ranked)
-
-
-    def count_unranked_items(self):
-
-        unranked = self.df[self.df[self.rank_col].isna()]
-
-        return len(unranked)
-
-    def unranked_items_per_section(self):
-
-        counts = {}
-
-        for sec in self.sections:
-            counts[sec] = self.count_unranked_items_in_section(sec)
-
-        return counts
-
     def selected_reason(self, item_id):
 
         row = self.df[self.df[self.id_col].astype(str) == str(item_id)]
@@ -296,49 +152,6 @@ class QueryEngine:
                     reasons.append((sec, reason))
 
         return reasons
-
-    def count_ranked_items_in_section(self, section):
-
-        col = f"{section}_answer"
-
-        if col not in self.df.columns:
-            return None
-
-        section_df = self.df[
-            self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"]) &
-            (self.df[self.rank_col].notna())
-        ]
-
-        return len(section_df)
-
-
-    # =====================================================
-    # UNSELECTED ITEMS
-    # =====================================================
-
-    def count_unselected_items(self):
-
-        selected_mask = None
-
-        for sec in self.sections:
-
-            col = f"{sec}_answer"
-
-            if col in self.df.columns:
-
-                mask = self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
-
-                if selected_mask is None:
-                    selected_mask = mask
-                else:
-                    selected_mask = selected_mask | mask
-
-        if selected_mask is None:
-            return len(self.df)
-
-        unselected = self.df[~selected_mask]
-
-        return len(unselected)
 
     # =====================================================
     # HIGHEST RANKED ITEMS IN DATASET
@@ -447,24 +260,6 @@ class QueryEngine:
             "Rank": int(row[self.rank_col])
         }
 
-    # =====================================================
-    # COUNT UNRANKED ITEMS IN SECTION
-    # =====================================================
-
-    def count_unranked_items_in_section(self, section):
-
-        col = f"{section}_answer"
-
-        if col not in self.df.columns:
-            return 0
-
-        data = self.df[
-            self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"]) &
-            (self.df[self.rank_col].isna())
-            ]
-
-        return len(data)
-
 
     # =====================================================
     # ITEM RANK LOOKUP
@@ -516,77 +311,7 @@ class QueryEngine:
 
         return "Unselected"
 
-    # =====================================================
-    # ALL RANKED ITEMS IN DATASET
-    # =====================================================
 
-    def all_ranked_items(self):
-
-        ranked_df = self.df[self.df[self.rank_col].notna()]
-
-        results = []
-
-        for _, row in ranked_df.iterrows():
-            item_id = str(row[self.id_col])
-            rank = int(row[self.rank_col])
-            section = self.item_section(item_id)
-
-            results.append({
-                "Item ID": item_id,
-                "Rank": rank,
-                "Section": section
-            })
-
-        return results
-
-    # =====================================================
-    # GET ITEM SECTION
-    # =====================================================
-    def get_item_section(self, item_id):
-
-        df = self.dataset.df
-
-        row = df[df[self.dataset.id_col] == item_id]
-
-        if row.empty:
-            return None
-
-        row = row.iloc[0]
-
-        for sec in self.dataset.sections:
-
-            col = f"{sec}_answer"
-
-            if col in df.columns:
-
-                val = str(row[col]).lower()
-
-                if val in ["yes", "true", "1"]:
-                    return sec
-
-        return None
-
-    def is_unselected(self, item_id):
-
-        row = self.df[self.df[self.id_col].astype(str) == str(item_id)]
-
-        if row.empty:
-            return None
-
-        row = row.iloc[0]
-
-        for sec in self.sections:
-
-            col = f"{sec}_answer"
-
-            if col in self.df.columns:
-
-                val = str(row[col]).lower()
-
-                if val in ["yes", "true", "1"]:
-                    return False  # item is selected
-
-        return True  # item is unselected
 
     def unselected_reasons(self, item_id):
 
@@ -612,56 +337,6 @@ class QueryEngine:
 
         return reasons
 
-    def items_in_section(self, section):
-
-        col = f"{section}_answer"
-
-        if col not in self.df.columns:
-            return []
-
-        data = self.df[
-            self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
-        ]
-
-        results = []
-
-        for _, row in data.iterrows():
-
-            item_id = str(row[self.id_col])
-            rank = row[self.rank_col]
-
-            if pd.isna(rank):
-                rank = None
-            else:
-                rank = int(rank)
-
-            results.append({
-                "Item ID": item_id,
-                "Rank": rank
-            })
-
-        return results
-
-    def count_ranked_items_per_section(self):
-
-        counts = {}
-
-        for sec in self.sections:
-
-            col = f"{sec}_answer"
-
-            if col not in self.df.columns:
-                counts[sec] = 0
-                continue
-
-            section_df = self.df[
-                self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"]) &
-                (self.df[self.rank_col].notna())
-                ]
-
-            counts[sec] = len(section_df)
-
-        return counts
 
     def item_details(self, item_id):
 
@@ -698,46 +373,6 @@ class QueryEngine:
             "Reason": reason
         }
 
-    def unselected_items(self, limit=10):
-
-        selected_mask = None
-
-        for sec in self.sections:
-
-            col = f"{sec}_answer"
-
-            if col in self.df.columns:
-
-                mask = self.df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
-
-                if selected_mask is None:
-                    selected_mask = mask
-                else:
-                    selected_mask = selected_mask | mask
-
-        if selected_mask is None:
-            unselected = self.df
-        else:
-            unselected = self.df[~selected_mask]
-
-        results = []
-
-        for _, row in unselected.head(limit).iterrows():
-
-            item_id = str(row[self.id_col])
-            rank = row[self.rank_col]
-
-            if pd.isna(rank):
-                rank = None
-            else:
-                rank = int(rank)
-
-            results.append({
-                "Item ID": item_id,
-                "Rank": rank
-            })
-
-        return results
 
     def item_field(self, item_id, field):
 
@@ -775,40 +410,6 @@ class QueryEngine:
 
         return value
 
-    def ranked_items_per_section(self):
-
-        ranked_df = self.df[self.df[self.rank_col].notna()]
-
-        result = {}
-
-        for sec in self.sections:
-
-            col = f"{sec}_answer"
-
-            if col not in self.df.columns:
-                continue
-
-            section_df = ranked_df[
-                ranked_df[col].astype(str).str.strip().str.lower().isin(["yes", "true", "1"])
-            ]
-
-            if not section_df.empty:
-                result[sec] = list(
-                    zip(
-                        section_df[self.id_col].astype(str),
-                        section_df[self.rank_col].astype(int)
-                    )
-                )
-
-        return result
-
-    def section_with_most_items(self):
-        counts = self.items_per_section()
-        best = max(counts, key=counts.get)
-        return {
-            "Section": best,
-            "Items": counts[best]
-        }
 
     # =====================================================
     # GENERIC FILTER ENGINE

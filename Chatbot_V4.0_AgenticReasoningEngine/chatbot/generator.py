@@ -1,7 +1,3 @@
-import json
-from google import genai
-
-#====================================================
 from anthropic import Anthropic
 from dotenv import load_dotenv
 import os
@@ -25,8 +21,8 @@ class AnswerGenerator:
     # GENERATE ANSWER
     # =====================================================
 
-    def generate(self, question, data, memory_summary):
-        safe_data = str(data)[:25000]
+    def generate(self, question, retrieved_items, memory):
+        safe_data = str(retrieved_items)[:8000]
 
         prompt = f"""
 Answer using ONLY the dataset records provided.
@@ -37,7 +33,7 @@ Dataset Records:
 {safe_data}
 
 Conversation Summary:
-{memory_summary}
+{memory}
 
 User Question:
 {question}

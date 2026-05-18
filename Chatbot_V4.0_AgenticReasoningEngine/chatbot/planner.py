@@ -19,7 +19,7 @@ class Planner:
     def plan(self, question, context="", sections=""):
 
         prompt = f"""
-You are a query planner for a dataset analysis chatbot.
+You are a query planner for a dataset reasoning chatbot.
 
 Conversation Context:
 {context}
@@ -27,80 +27,50 @@ Conversation Context:
 User Question:
 {question}
 
-Your job is to convert the user question into a structured query plan.
+Convert the user question into a structured query plan.
 
-The dataset contains items grouped into sections and ranked.
 Valid dataset sections:
 {sections}
 
-Only use these sections if a section is required.
-Do NOT invent new section names.
-
-Sections depend on the dataset and should NOT be invented.
-If the user mentions a section, extract it exactly as written.
+Only use valid sections.
+Do not invent section names.
 
 Available operations:
 
-count_items → total dataset items
-count_sections → total sections
-items_per_section → item counts per section
+item_rank → item ranking
+item_section → item placement section
 
-count_ranked_items → ranked item count
-count_unranked_items → unranked item count
-count_unselected_items → unselected item count
-
-count_items_in_section → items in section
-count_ranked_items_in_section → ranked items in section
-count_ranked_items_per_section → ranked counts per section
-unranked_items_per_section → unranked counts per section
-
-highest_ranked → best ranked items
-lowest_ranked → lowest ranked items
-highest_ranked_section → best ranked in section
-lowest_ranked_section → lowest ranked in section
-top_ranked_items → top ranked items
-
-section_with_most_items → section with most items
-section_with_most_ranked → section with most ranked items
-average_rank_per_section → average rank per section
-
-list_sections → list sections
-items_in_section → list items in section
-ranked_items_per_section → ranked items grouped by section
-unselected_items → list unselected items
-
-item_rank → item rank
-item_section → item section
-item_details → item details
+item_details → item information
 item_field → specific item field
 
-selected_reason → why item selected
+selected_reason → why item was selected
 other_section_reasons → why not placed elsewhere
-unselected_reasons → why item unselected
+unselected_reasons → why item was unselected
+
+highest_ranked → highest ranked items
+lowest_ranked → lowest ranked items
+highest_ranked_section → highest ranked item in section
+lowest_ranked_section → lowest ranked item in section
+top_ranked_items → top ranked items
 
 filter_items → dynamic filtering
 
 Rules:
 
-- count questions → counting operations
-- list/show section items → items_in_section
 - item IDs → fill item_id
 - section names → fill section
-- item details/info → item_details
-- item properties/headline/score/page/etc → item_field
-- placement/ordering section questions → item_field with field "ordering section"
+
+- item details/info/about item → item_details
+
+- item properties/headline/score/page/date/outlet/etc → item_field
+
+- placement questions → item_field with field "ordering section"
 
 - why selected → selected_reason
 - why not elsewhere → other_section_reasons
 - why unselected → unselected_reasons
 
-- highest number of articles → section_with_most_items
-- ranked item counts in section → count_ranked_items_in_section
-
-- filtering/above/below/contains → filter_items
-
-- "number of articles" means TOTAL items
-- "top ranked" refers to rank column
+- filtering/above/below/contains/search/find → filter_items
 
 - unknown intent → operation "unknown"
 
@@ -116,12 +86,11 @@ Return ONLY valid JSON:
  "ascending": false,
  "limit": 10
 }}
-
 """
 
         response = self.client.messages.create(
             model=self.model,
-            max_tokens=1024,
+            max_tokens=512,
             temperature=0,
             messages=[
                 {
