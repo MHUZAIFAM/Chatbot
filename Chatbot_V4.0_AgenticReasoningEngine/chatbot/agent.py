@@ -388,13 +388,33 @@ class ChatbotAgent:
         # REASONING RESPONSES
         # -------------------------------------------------
 
-        if operation in [
-            "selected_reason",
-            "other_section_reasons",
-            "unselected_reasons"
-        ]:
+        if operation == "selected_reason":
 
             answer = str(result)
+
+            self.memory.add(question, answer)
+
+            return answer
+
+        if operation in ["other_section_reasons", "unselected_reasons"]:
+
+            if not result:
+                answer = "No section reasoning found for this item."
+                self.memory.add(question, answer)
+                return answer
+
+            # result is a list of (section_slug, reason) tuples
+            lines = []
+
+            for section_slug, reason in result:
+                label = pretty_section(section_slug)
+                lines.append(
+                    f"<div style='margin-bottom:12px'>"
+                    f"• <b>{label}:</b> {reason}"
+                    f"</div>"
+                )
+
+            answer = "".join(lines)
 
             self.memory.add(question, answer)
 
