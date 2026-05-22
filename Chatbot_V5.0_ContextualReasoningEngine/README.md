@@ -1,10 +1,10 @@
-# 🧠 Agentic Dataset Reasoning Engine (V4.0)
+# 🧠 Agentic Dataset Reasoning Engine (V5.0)
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green)
 ![Frontend](https://img.shields.io/badge/Custom%20Frontend-JS%20%2B%20HTML-blue)
 ![Claude](https://img.shields.io/badge/LLM-Claude%20Sonnet%204-purple)
-![Version](https://img.shields.io/badge/version-v4.0-orange)
+![Version](https://img.shields.io/badge/version-v5.0-orange)
 
 ---
 
@@ -20,6 +20,7 @@ The system combines:
 - Agentic reasoning
 - Dynamic execution pipelines
 - LLM-guided orchestration
+- **Briefing-rule-aware section reasoning** *(new in V5)*
 
 to answer analytical and reasoning-based questions about:
 
@@ -28,13 +29,11 @@ to answer analytical and reasoning-based questions about:
 - Sections
 - Placement reasoning
 - Dataset metadata
-- Selection explanations
+- Selection and exclusion explanations
 
 ---
 
-# ⚡ Structured Agentic Querying (V4)
-
-The system now follows a modular reasoning pipeline:
+# ⚡ Reasoning Pipeline
 
 ```text
 User Question
@@ -95,13 +94,11 @@ Routes structured operations to the correct analytical engine.
 
 Handles deterministic dataset analytics including:
 
-- Filtering
-- Sorting
-- Ranking
-- Counting
+- Filtering and sorting
+- Ranking lookups
 - Section analytics
 - Item reasoning
-- Dynamic querying
+- Enriched section exclusion reasoning *(returns relevance, relevant text, and section context)*
 
 ---
 
@@ -123,6 +120,15 @@ Maintains conversational context and supports reference resolution across querie
 
 ---
 
+### 📋 DatasetManager *(updated in V5)*
+
+- Auto-detects sections from `_answer` columns
+- Supports both `.csv` and `.xlsx` datasets
+- Loads and validates `section_prompts.json` briefing rules at startup
+- Runs a coverage check comparing dataset sections against JSON keys — warns on mismatches in both directions
+
+---
+
 # 🖥️ Frontend
 
 A fully custom-built frontend interface featuring:
@@ -141,10 +147,11 @@ A fully custom-built frontend interface featuring:
 # 📁 Project Structure
 
 ```text
-Chatbot_V4.0_AgenticReasoningEngine
+Chatbot_V5.0_BriefingAwareReasoning
 │
 ├── Data
-│   └── Full_Enriched_Dataset.csv
+│   ├── Full_Enriched_Dataset.csv
+│   └── section_prompts.json          ← briefing rules (new in V5)
 │
 ├── chatbot
 │   ├── agent.py
@@ -177,162 +184,105 @@ Chatbot_V4.0_AgenticReasoningEngine
 
 # ✨ Key Features
 
-# 📊 Dataset Exploration
+### 🏆 Ranking Analytics
 
-- Count total items
-- Count total sections
-- Count items per section
-- Count ranked/unranked items
-
-Example:
-
-```text
-How many items are there in this dataset?
-```
-
----
-
-# 🧾 Section Analysis
-
-- List all items inside a section
-- Count items in a section
-- Compare sections
-- Identify sections with most items
-- Section ranking analytics
-
-Example:
-
-```text
-Which section has the highest number of articles?
-```
-
----
-
-# 🏆 Ranking Analytics
-
-- Highest ranked items
-- Lowest ranked items
+- Highest and lowest ranked items
 - Top ranked articles
-- Ranked item listings
-- Average rank per section
-
-Example:
+- Section-level ranking
 
 ```text
-List top ranked items in Health Funds
+List top ranked items in Road Safety
 ```
 
 ---
 
-# ⚡ Dynamic Filtering Engine (NEW)
+### ⚡ Dynamic Filtering Engine
 
 Supports structured filtering and sorting using natural language.
 
-Examples:
-
 ```text
 Find articles with word count above 800
+Find articles containing Operation Nexus
 ```
 
-```text
-Find healthcare articles with score above 0.8
-```
-
-```text
-Find articles containing diabetes
-```
-
-Capabilities include:
-
-- Numeric filtering
-- Text filtering
+Capabilities:
+- Numeric and text filtering
 - Dynamic sorting
 - Section-aware querying
 - Result limiting
 
 ---
 
-# 📍 Item Placement Analysis
-
-Example:
+### 📍 Item Placement Analysis
 
 ```text
-Where was item 1167981127 placed?
+Where was item R00131337085 placed?
 ```
 
-Output:
+Correctly handles both placed and unselected items — falls back to logical section detection when `Ordering_Section` is unpopulated.
+
+---
+
+### 🧠 Selection & Exclusion Reasoning *(enhanced in V5)*
+
+Explains why items were selected, ranked, rejected, or placed in specific sections.
 
 ```text
-Item 1167981127 was placed in Calvary Coverage
+Why was it placed there?
+Why was it ranked 3rd?
+Why was it unselected?
+Why wasn't it placed in any other section?
+```
+
+V5 enriches exclusion answers with:
+
+- **Relevance badge** — colour-coded High / Medium / Low / Not Relevant
+- **AI reason** — specific explanation for that article
+- **Key article text** — the excerpt that triggered the evaluation
+- **Briefing rule** — the exact "Do not include" rules for that section, rendered as clean bullet points with `→` redirects highlighted
+
+---
+
+### 📋 Briefing-Rule-Aware Reasoning *(new in V5)*
+
+Each dataset now ships with a `section_prompts.json` file defining the inclusion and exclusion rules for every section. At startup the system:
+
+1. Loads the rules
+2. Validates coverage — warns if any dataset section is missing a rule or if the JSON contains keys not present in the dataset
+3. Attaches the relevant rule block to every exclusion card at query time
+
+Example startup output:
+
+```text
+── Section Prompt Coverage ──────────────────
+  ✔  Matched  (5): ['accidents', 'corporate', 'road_safety', 'social_insurance', 'victorian_government']
+─────────────────────────────────────────────
 ```
 
 ---
 
-# 🧠 Selection Reasoning
-
-Explains WHY items were:
-
-- Selected
-- Ranked
-- Rejected
-- Placed in specific sections
-
-Example:
-
-```text
-Why was item 1167981127 placed there?
-```
-
----
-
-# 💬 Conversational Memory
+### 💬 Conversational Memory
 
 Supports context-aware follow-up questions.
 
-Examples:
-
 ```text
+Tell me about R00131337085
 Where was it placed?
-Why was it ranked there?
-Tell me more about that item.
+Why was it unselected?
+Why wasn't it placed in Road Safety?
 ```
 
 ---
 
-# 🚀 Token Optimization (V4)
+# 🔄 What Changed in V5
 
-V4 dramatically reduces token usage by shifting analytical logic from the LLM to deterministic Python execution.
-
-## Previous Architecture (V3)
-
-```text
-Entire Dataset → LLM → Answer
-```
-
-## New Architecture (V4)
-
-```text
-Planner → Python Execution → Structured Response
-```
-
-Benefits:
-
-- Lower API costs
-- Faster responses
-- Higher accuracy
-- Reduced hallucinations
-- Better scalability
-
----
-
-# 📈 Token Usage Monitoring
-
-The system now tracks:
-
-- Planner token usage
-- Generator token usage
-
-allowing detailed performance analysis and optimization.
+| Area | V4 | V5 |
+|---|---|---|
+| `dataset.py` | CSV only | CSV + XLSX, loads `section_prompts.json`, coverage validation |
+| `query_engine.py` | Returns plain reason tuples | Returns enriched dicts with reason, relevance, relevant text |
+| `agent.py` | Raw section slug display, raw ISO dates, float ranks | Pretty section names, formatted dates, clean ranks, briefing rule cards |
+| `main.py` | `GEMINI_API_KEY` | `ANTHROPIC_API_KEY`, `SECTION_PROMPTS_PATH` wired in |
+| `Data/` | CSV only | + `section_prompts.json` |
 
 ---
 
@@ -340,17 +290,13 @@ allowing detailed performance analysis and optimization.
 
 - Python 3.10+
 
-Install dependencies:
-
 ```bash
-pip install fastapi uvicorn pandas python-dotenv anthropic
+pip install fastapi uvicorn pandas openpyxl python-dotenv anthropic
 ```
 
 ---
 
 # 🔐 Environment Setup
-
-Create a `.env` file:
 
 ```env
 ANTHROPIC_API_KEY=your_api_key_here
@@ -360,26 +306,16 @@ ANTHROPIC_API_KEY=your_api_key_here
 
 # ▶️ Running the Application
 
-## 1️⃣ Start Backend
+### 1️⃣ Start Backend
 
 ```bash
 uvicorn src.main:app --reload --port 8001
 ```
 
----
-
-## 2️⃣ Run Frontend
-
-Open manually:
+### 2️⃣ Open Frontend
 
 ```text
 frontend/index.html
-```
-
-OR serve locally:
-
-```bash
-python -m http.server
 ```
 
 ---
@@ -396,7 +332,7 @@ python -m http.server
 - FastAPI
 - Anthropic Claude Sonnet 4
 - Vanilla JavaScript
-- HTML/CSS
+- HTML / CSS
 - Pandas
 - Python
 
@@ -405,52 +341,34 @@ python -m http.server
 # 📜 Version History
 
 ## 🔹 V1.0 — Rule-Based System
-
-- Deterministic dataset querying
-- No reasoning
-
----
+- Deterministic dataset querying, no reasoning
 
 ## 🔹 V2.0 — Agentic Foundation
-
-- Modular architecture
-- Initial LLM integration
-
----
+- Modular architecture, initial LLM integration
 
 ## 🔹 V3.0 — Reasoning Agent
-
-- Planner → Executor pipeline
-- Conversational memory
-- Multi-step analytical reasoning
-
----
+- Planner → Executor pipeline, conversational memory, multi-step analytical reasoning
 
 ## 🔹 V3.1 — Custom Frontend Upgrade
-
-- Full frontend redesign
-- Chat-based interaction system
-- Sidebar history
-- Stop-generation controls
-
----
+- Full frontend redesign, chat-based interaction, sidebar history, stop-generation controls
 
 ## 🔹 V4.0 — Structured Agentic Reasoning Engine
+- Claude Sonnet integration, structured query planning, generic filtering engine, dynamic executor routing, deterministic analytical execution, reduced token usage, token monitoring
 
-- Claude Sonnet integration
-- Structured query planning
-- Generic filtering engine
-- Dynamic executor routing
-- Deterministic analytical execution
-- Reduced token usage
-- Structured filtering/sorting
-- Improved conversational reasoning
-- Token monitoring system
+## 🔹 V5.0 — Briefing-Aware Reasoning Engine
+- `section_prompts.json` support — briefing rules loaded and validated at startup
+- Section coverage check with mismatch warnings
+- Enriched exclusion cards: relevance badge, AI reason, article key text, briefing rule bullets
+- Pretty section names, formatted dates, clean integer ranks
+- XLSX dataset support
+- Unselected item placement fallback
+- Fixed env var (`ANTHROPIC_API_KEY`)
 
 ---
 
 # 🔮 Future Improvements
 
+- LLM-synthesised briefing rule explanations (fuse rule + reason into one readable sentence)
 - Multi-step reasoning chains
 - Semantic vector retrieval
 - Hybrid RAG pipelines
@@ -458,7 +376,6 @@ python -m http.server
 - Streaming responses
 - Visualization dashboards
 - Evaluation benchmarks
-- Autonomous query decomposition
 
 ---
 
