@@ -4,7 +4,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green)
 ![Frontend](https://img.shields.io/badge/Frontend-Custom_UI-blue)
 ![Claude](https://img.shields.io/badge/LLM-Claude%20Sonnet%204-purple)
-![Version](https://img.shields.io/badge/version-v4.0-orange)
+![Version](https://img.shields.io/badge/version-v5.0-orange)
 
 ---
 
@@ -22,6 +22,8 @@ Agentic Dataset Assistant
 Reasoning Agent
         ↓
 Structured Dataset Reasoning Engine
+        ↓
+Briefing-Aware Contextual Reasoning Engine
 ```
 
 The system combines:
@@ -32,6 +34,7 @@ The system combines:
 - Agentic planning & execution
 - Structured query planning
 - Dynamic filtering & sorting
+- Briefing-rule-aware exclusion reasoning
 - Modular AI architecture
 
 to build intelligent analytical assistants capable of reasoning over structured datasets.
@@ -40,32 +43,29 @@ to build intelligent analytical assistants capable of reasoning over structured 
 
 # 📚 Project Versions
 
-# 🔹 Chatbot_V1.0_RuleBased
+## 🔹 Chatbot_V1.0_RuleBased
 
-The first implementation of the chatbot based entirely on rule-based logic.
+The first implementation based entirely on rule-based logic.
 
-## ✨ Features
-
+**Features**
 - Rule-based query parsing
 - Dataset schema interpretation
 - Section detection
 - Ranking analysis
 - Direct dataset lookup
 
-## ⚠️ Limitations
-
+**Limitations**
 - No reasoning capability
 - Hard-coded query handling
 - Limited conversational flexibility
 
 ---
 
-# 🔹 Chatbot_V2.0_Agentic
+## 🔹 Chatbot_V2.0_Agentic
 
 Introduced the first agent-based architecture combining deterministic tools with LLM reasoning.
 
-## ✨ Features
-
+**Features**
 - Agent-based chatbot architecture
 - QueryEngine for deterministic dataset querying
 - Gemini-powered reasoning layer
@@ -73,48 +73,25 @@ Introduced the first agent-based architecture combining deterministic tools with
 - Conversation memory
 - Interactive Streamlit interface
 
-## 🚀 Improvements Over V1
-
+**Improvements over V1**
 - More flexible natural language understanding
 - Modular architecture
 - Separation between reasoning and dataset tools
-- Better conversational interaction
 
 ---
 
-# 🔹 Chatbot_V3.0_AgenticReasoning
+## 🔹 Chatbot_V3.0_AgenticReasoning
 
 Introduced structured reasoning and planning pipelines.
 
-This version enabled the system to:
-
-- Analyze user queries
-- Plan actions
-- Execute dataset tools
-- Generate contextual explanations
-
-## ✨ Features
-
+**Features**
 - Planner → Executor reasoning pipeline
 - Tool-based dataset interaction
-- Structured dataset retrieval
 - Ranking explanation capability
 - Conversational memory
-- Modular reasoning architecture
 - Multi-turn dataset exploration
 
-## 🧠 Core Components
-
-- **Agent** → Coordinates reasoning
-- **Planner** → Decides actions
-- **Executer** → Runs dataset tools
-- **Retriever** → Retrieves dataset context
-- **Generator** → Produces natural language answers
-- **Memory** → Maintains conversational context
-- **QueryEngine** → Deterministic dataset analytics
-
-## 🚀 Improvements Over V2
-
+**Improvements over V2**
 - Structured planning architecture
 - Improved reasoning capability
 - Better explainability
@@ -122,96 +99,62 @@ This version enabled the system to:
 
 ---
 
-# 🔹 Chatbot_V4.0_AgenticReasoningEngine
+## 🔹 Chatbot_V4.0_AgenticReasoningEngine
 
-The most advanced version introducing a **Structured Dataset Reasoning Engine** architecture.
+Introduced a **Structured Dataset Reasoning Engine** — transitioning from an LLM-centric chatbot to an LLM-guided deterministic execution engine.
 
-This version transitions the project from:
+The LLM now handles planning, intent understanding, and fallback reasoning while deterministic Python handles filtering, sorting, ranking, and dataset analytics.
 
-```text
-LLM-centric chatbot
-```
-
-to:
-
-```text
-LLM-guided deterministic analytical execution engine
-```
-
-The LLM now primarily handles:
-
-- Planning
-- Intent understanding
-- Query orchestration
-- Fallback reasoning
-
-while deterministic Python execution handles:
-
-- Filtering
-- Sorting
-- Counting
-- Ranking
-- Dataset analytics
-
-## ✨ Features
-
+**Features**
 - Claude Sonnet 4 integration
 - Structured query planning
 - Generic filtering engine
 - Dynamic executor routing
 - Deterministic analytical execution
 - Token usage monitoring
-- Structured filtering & sorting
-- Dynamic query execution
 - Custom modern frontend
-- Improved conversational reasoning
-- Reduced token usage
 
-## ⚡ Structured Agentic Querying
+**Pipeline**
 
 ```text
-User Question
-      ↓
-Frontend UI
-      ↓
-FastAPI Backend
-      ↓
-ChatbotAgent
-      ↓
-Planner
-      ↓
-Structured Query Plan
-      ↓
-Executor
-      ↓
-Query Engine
-      ↓
-Deterministic Dataset Logic
-      ↓
-Formatted Response
+User Question → Frontend → FastAPI → ChatbotAgent
+      → Planner → Query Plan → Executor
+      → QueryEngine → Deterministic Logic → Response
 ```
 
-## 🧠 Core Components
-
-- **Planner** → Converts natural language into structured query plans
-- **Executor** → Routes structured operations
-- **QueryEngine** → Handles deterministic analytics
-- **Retriever** → Retrieves relevant dataset rows
-- **Generator** → Claude fallback reasoning layer
-- **Memory** → Maintains conversational context
-- **Frontend UI** → Modern chat interface
-
-## 🚀 Improvements Over V3
-
+**Improvements over V3**
 - Structured executable query planning
 - Dynamic filtering architecture
 - Generic analytical execution engine
 - Reduced token usage
-- Claude Sonnet integration
 - Modern frontend redesign
-- Token monitoring system
-- Improved execution reliability
 - Lower hallucination rate
+
+---
+
+## 🔹 Chatbot_V5.0_ContextualReasoningEngine
+
+Introduced **briefing-rule-aware reasoning** — the system now understands *why* placement decisions were made in the context of actual client briefing rules, not just the dataset.
+
+**What's new**
+- `section_prompts.json` support — client briefing rules loaded at startup
+- Section coverage validation — warns on mismatches between dataset sections and JSON keys
+- Enriched exclusion cards:
+  - Colour-coded relevance badge (High / Medium / Low / Not Relevant)
+  - AI-generated reason specific to the article
+  - Key article text that triggered the evaluation
+  - Briefing rule bullets with `→` redirects highlighted
+- Pretty section names (`aged_and_community_care` → `Aged and Community Care`)
+- Formatted dates (ISO → `3 Feb 2026`) and clean integer ranks (`9.0` → `9`)
+- XLSX dataset support alongside CSV
+- Unselected item placement fallback
+- Ranking why-questions now correctly return `Ordering_Reason`
+
+**Improvements over V4**
+- Reasoning grounded in actual client briefing rules
+- Richer, more readable exclusion explanations
+- Startup validation catches JSON/dataset mismatches early
+- Cleaner display formatting throughout
 
 ---
 
@@ -227,6 +170,8 @@ Chatbot
 ├── Chatbot_V3.0_AgenticReasoning
 │
 ├── Chatbot_V4.0_AgenticReasoningEngine
+│
+├── Chatbot_V5.0_ContextualReasoningEngine
 │   ├── chatbot
 │   │   ├── agent.py
 │   │   ├── planner.py
@@ -241,7 +186,8 @@ Chatbot
 │   │   └── models.py
 │   │
 │   ├── Data
-│   │   └── Full_Enriched_Dataset.csv
+│   │   ├── Full_Enriched_Dataset.csv
+│   │   └── section_prompts.json
 │   │
 │   ├── frontend
 │   │   ├── index.html
@@ -262,38 +208,25 @@ Chatbot
 
 # ⚙️ Technology Stack
 
-## 🧱 Core Technologies
-
-- Python
+**Core**
+- Python 3.10+
 - FastAPI
-- Pandas
-- HTML/CSS
-- Vanilla JavaScript
+- Pandas / openpyxl
+- HTML / CSS / Vanilla JavaScript
+
+**LLM Providers**
+- V2–V3 → Google Gemini API
+- V4–V5 → Anthropic Claude Sonnet 4
+
+**User Interfaces**
+- V2–V3 → Streamlit
+- V4–V5 → Custom Frontend UI
 
 ---
 
-## 🤖 LLM Providers
+# 🔮 Future Improvements
 
-### V2–V3
-- Google Gemini API
-
-### V4
-- Anthropic Claude Sonnet 4
-
----
-
-## 🖥️ User Interfaces
-
-### V2–V3
-- Streamlit
-
-### V4
-- Custom Frontend UI
-
----
-
-# 🚀 Future Improvements
-
+- LLM-synthesised briefing rule explanations (fuse rule + reason into one readable sentence)
 - Multi-step reasoning chains
 - Autonomous query decomposition
 - Semantic vector retrieval
@@ -302,21 +235,12 @@ Chatbot
 - Streaming responses
 - Visualization dashboards
 - Evaluation benchmarks
-- Advanced reference resolution
 
 ---
 
-# 🎯 Goal of the Project
+# 🎯 Goal
 
-The goal of this project is to explore how AI agents can interact with structured datasets by combining:
-
-- Deterministic dataset tools
-- LLM reasoning capabilities
-- Structured execution pipelines
-- Conversational interfaces
-- Agentic planning systems
-
-to build intelligent analytical assistants capable of advanced dataset reasoning.
+To explore how AI agents can interact with structured datasets by combining deterministic dataset tools, LLM reasoning, structured execution pipelines, and agentic planning systems — building intelligent analytical assistants capable of advanced, explainable dataset reasoning.
 
 ---
 
