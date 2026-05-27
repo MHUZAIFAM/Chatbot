@@ -114,10 +114,26 @@ class QueryEngine:
 
         col = f"{section}_reason"
 
-        if col in self.df.columns:
-            return row[col]
+        if col not in self.df.columns:
+            return None
 
-        return None
+        reason = row[col]
+
+        if not isinstance(reason, str) or not reason.strip():
+            return None
+
+        relevant_text = None
+        text_col = f"{section}_relevant_text"
+        if text_col in self.df.columns:
+            val = row[text_col]
+            if isinstance(val, str) and val.strip() and val.lower() != "nan":
+                relevant_text = val.strip()
+
+        return {
+            "section":       section,
+            "reason":        reason,
+            "relevant_text": relevant_text,
+        }
 
     def other_section_reasons(self, item_id, section=None):
 

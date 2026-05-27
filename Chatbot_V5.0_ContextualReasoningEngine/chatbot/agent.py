@@ -16,20 +16,12 @@ from chatbot.executer import Executor
 # =============================================================
 
 def pretty_section(raw):
-    """
-    'aged_and_community_care' → 'Aged and Community Care'
-    'hospitals_&_hospitals_in_the_home' → 'Hospitals & Hospitals in the Home'
-    """
     if not raw or raw == "Unselected":
         return raw
     return raw.replace("_", " ").title()
 
 
 def pretty_date(raw):
-    """
-    '2026-02-03T18:04:00.000Z' → '3 Feb 2026'
-    Falls back gracefully if format is unexpected.
-    """
     if not raw:
         return raw
     raw_str = str(raw).strip()
@@ -48,9 +40,6 @@ def pretty_date(raw):
 
 
 def pretty_rank(raw):
-    """
-    9.0 → '9'  |  None → None  |  'Unranked' → 'Unranked'
-    """
     if raw is None:
         return None
     if str(raw).lower() == "unranked":
@@ -59,6 +48,28 @@ def pretty_rank(raw):
         return str(int(float(raw)))
     except (ValueError, TypeError):
         return str(raw)
+
+
+def make_card(label, badge, reason, relevant_text, briefing_sentence):
+    """Shared plain-text response for both selected and exclusion reasons."""
+
+    parts = []
+
+    # Section label + badge (badge is HTML span, only used for exclusions)
+    parts.append(f"<b>{label}</b>{badge}")
+
+    # Reason
+    parts.append(reason)
+
+    # Key article text
+    if relevant_text:
+        parts.append(f'<i style="color:#8a8a8a;">"{relevant_text}"</i>')
+
+    # Briefing context sentence
+    if briefing_sentence:
+        parts.append(briefing_sentence)
+
+    return "<br><br>".join(parts)
 
 
 # =============================================================
@@ -81,10 +92,6 @@ class ChatbotAgent:
         self.planner      = Planner(api_key)
         self.executor     = Executor(self.query_engine)
 
-    # ---------------------------------------------------------
-    # PUBLIC ENTRY POINT
-    # ---------------------------------------------------------
-
     def ask(self, question):
 
         print("ASK FUNCTION TRIGGERED")
@@ -92,19 +99,12 @@ class ChatbotAgent:
 
         q_lower = question.lower()
 
-        # ── AGGREGATE / STATS GUARD (pre-planner) ─────────────
-        # Counting questions are outside this chatbot's scope.
-        # Block them before wasting a planner API call.
+        # ── AGGREGATE / STATS GUARD ────────────────────────────
 
         _AGG_PATTERNS = [
-            r"\bhow many\b",
-            r"\bcount\b",
-            r"\btotal number\b",
-            r"\bnumber of\b",
-            r"\bhow much\b",
-            r"\bwhat is the size\b",
-            r"\bdataset size\b",
-            r"\bhow large\b",
+            r"\bhow many\b", r"\bcount\b", r"\btotal number\b",
+            r"\bnumber of\b", r"\bhow much\b", r"\bwhat is the size\b",
+            r"\bdataset size\b", r"\bhow large\b",
         ]
         _AGG_KEYWORDS = [
             "how many sections", "how many items", "how many ranked",
@@ -129,7 +129,6 @@ class ChatbotAgent:
             return answer
 
         # ── REFERENCE RESOLUTION ───────────────────────────────
-        # Replace "this item / that article / it" with last known item ID.
 
         if self.memory.last_item:
             ref_phrases = [
@@ -169,8 +168,6 @@ class ChatbotAgent:
         item_id   = plan.get("item_id")
 
         # ── RANKING WHY GUARD ──────────────────────────────────
-        # "Why was it ranked 9th?" → Ordering_Reason, not section reason.
-        # Must fire BEFORE the generic "why" handler.
 
         _RANK_WHY_PATTERNS = [
             r"\branked\b", r"\branking\b", r"\bposition\b",
@@ -189,7 +186,6 @@ class ChatbotAgent:
             plan["field"]     = "ordering reason"
             operation         = "item_field"
 
-        # ── GENERIC WHY HANDLER ────────────────────────────────
         elif (
             q_lower.startswith("why")
             and item_id
@@ -206,7 +202,7 @@ class ChatbotAgent:
 
         result = self.executor.execute(plan)
 
-        # ── UPDATE CONVERSATIONAL STATE ────────────────────────
+        # ── UPDATE STATE ───────────────────────────────────────
 
         if plan.get("item_id"):
             self.memory.last_item = plan.get("item_id")
@@ -275,9 +271,6 @@ class ChatbotAgent:
             elif field in ("rank", "ranking"):
                 answer = pretty_rank(result)
             elif field in ("ordering section", "section"):
-                # Ordering_Section column is only populated for ranked items.
-                # For unselected/unranked items fall back to the logical section
-                # derived from the _answer columns.
                 raw = str(result).strip()
                 if raw.lower() in ("not available in the dataset", "nan", "", "none"):
                     logical = self.query_engine.item_section(item_id)
@@ -310,7 +303,38 @@ class ChatbotAgent:
         # ── SELECTED REASON ────────────────────────────────────
 
         if operation == "selected_reason":
-            answer = str(result)
+
+            if not isinstance(result, dict):
+                answer = str(result)
+                self.memory.add(question, answer)
+                return answer
+
+            section_slug  = result.get("section", "")
+            reason        = result.get("reason", "")
+            relevant_text = result.get("relevant_text")
+            label         = pretty_section(section_slug)
+
+            briefing_rule     = self.dataset_manager.section_prompts.get(section_slug, "")
+            briefing_sentence = ""
+
+            if briefing_rule:
+                synth = self.generator.synthesise_exclusions([{
+                    "section":       section_slug,
+                    "section_label": label,
+                    "reason":        reason,
+                    "relevant_text": relevant_text or "",
+                    "briefing_rule": briefing_rule,
+                }], mode="inclusion")
+                briefing_sentence = synth.get(section_slug, "")
+
+            answer = make_card(
+                label=label,
+                badge="",
+                reason=reason,
+                relevant_text=relevant_text,
+                briefing_sentence=briefing_sentence,
+            )
+
             self.memory.add(question, answer)
             return answer
 
@@ -324,26 +348,49 @@ class ChatbotAgent:
                 return answer
 
             section_prompts = self.dataset_manager.section_prompts
-            cards = []
 
+            normalised = []
             for entry in result:
-
-                # Support both old tuple format and new dict format
                 if isinstance(entry, dict):
-                    section_slug  = entry["section"]
-                    reason        = entry["reason"]
-                    relevant_text = entry.get("relevant_text")
-                    relevance     = str(entry.get("relevance") or "").strip()
+                    normalised.append(entry)
                 else:
                     section_slug, reason = entry
-                    relevant_text = None
-                    relevance     = ""
+                    normalised.append({
+                        "section":       section_slug,
+                        "reason":        reason,
+                        "relevant_text": None,
+                        "relevance":     "",
+                    })
 
-                label = pretty_section(section_slug)
+            # Batch synthesise all sections in one API call
+            synth_input = []
+            for entry in normalised:
+                slug = entry["section"]
+                synth_input.append({
+                    "section":       slug,
+                    "section_label": pretty_section(slug),
+                    "reason":        entry["reason"],
+                    "relevant_text": entry.get("relevant_text") or "",
+                    "briefing_rule": section_prompts.get(slug, ""),
+                })
 
-                # Relevance colour badge
+            synthesised = self.generator.synthesise_exclusions(synth_input, mode="exclusion")
+
+            cards = []
+
+            for entry in normalised:
+
+                section_slug  = entry["section"]
+                reason        = entry["reason"]
+                relevant_text = entry.get("relevant_text")
+                relevance     = str(entry.get("relevance") or "").strip()
+                label         = pretty_section(section_slug)
+
+                briefing_sentence = synthesised.get(section_slug, "")
+
+                # Relevance badge
                 rel_lower = relevance.lower()
-                if rel_lower in ("not relevant",):
+                if rel_lower == "not relevant":
                     badge_color = "#ef4444"
                 elif rel_lower == "low":
                     badge_color = "#f97316"
@@ -363,93 +410,15 @@ class ChatbotAgent:
                         f"{relevance}</span>"
                     )
 
-                # Briefing rule — extract "Do not include" block and render as bullets
-                briefing_rule = section_prompts.get(section_slug, "")
-                rule_html = ""
-                if briefing_rule:
-                    lower_rule = briefing_rule.lower()
-                    do_not_idx = lower_rule.find("do not include")
-                    excerpt = (
-                        briefing_rule[do_not_idx:].strip()
-                        if do_not_idx != -1
-                        else briefing_rule.strip()
-                    )
+                cards.append(make_card(
+                    label=label,
+                    badge=badge,
+                    reason=reason,
+                    relevant_text=relevant_text,
+                    briefing_sentence=briefing_sentence,
+                ))
 
-                    # Parse into lines, build bullet items
-                    raw_lines = [l.strip() for l in excerpt.splitlines()]
-                    bullet_items = []
-                    for line in raw_lines:
-                        if not line:
-                            continue
-                        # Header line e.g. "Do not include coverage of the following:"
-                        if line.lower().startswith("do not include"):
-                            bullet_items.append(
-                                f"<div style='font-size:10px;text-transform:uppercase;"
-                                f"letter-spacing:0.07em;color:#4b5563;font-weight:600;"
-                                f"margin-bottom:6px;'>{line}</div>"
-                            )
-                        else:
-                            # Split on → to style the redirect separately
-                            if "→" in line:
-                                rule_part, redirect = line.split("→", 1)
-                                bullet_items.append(
-                                    f"<div style='display:flex;gap:6px;margin-bottom:4px;'>"
-                                    f"<span style='color:#4b5563;flex-shrink:0;'>•</span>"
-                                    f"<span>{rule_part.strip()} "
-                                    f"<span style='color:#6366f1;font-size:11px;'>"
-                                    f"→ {redirect.strip()}</span></span></div>"
-                                )
-                            else:
-                                bullet_items.append(
-                                    f"<div style='display:flex;gap:6px;margin-bottom:4px;'>"
-                                    f"<span style='color:#4b5563;flex-shrink:0;'>•</span>"
-                                    f"<span>{line}</span></div>"
-                                )
-
-                    # Cap at 6 bullet items to avoid overwhelming the card
-                    MAX_BULLETS = 6
-                    shown   = bullet_items[:MAX_BULLETS + 1]  # +1 for header line
-                    trimmed = len(bullet_items) > MAX_BULLETS + 1
-
-                    rule_inner = "".join(shown)
-                    if trimmed:
-                        rule_inner += (
-                            f"<div style='color:#4b5563;font-size:11px;"
-                            f"margin-top:4px;'>…and more</div>"
-                        )
-
-                    rule_html = f"""
-  <div style='margin-top:8px;padding:10px 12px;background:#0d1117;
-              border-left:2px solid #374151;border-radius:4px;
-              color:#8a8a8a;font-size:12.5px;line-height:1.6;'>
-    {rule_inner}
-  </div>"""
-
-                # Key text from article
-                text_html = ""
-                if relevant_text:
-                    text_html = f"""
-  <div style='margin-top:8px;padding:8px 10px;background:#0d0d0d;
-              border-left:2px solid #6366f1;border-radius:4px;
-              color:#8a8a8a;font-size:12.5px;font-style:italic;line-height:1.55;'>
-    "{relevant_text}"
-  </div>"""
-
-                card = f"""<div style='margin-bottom:18px;padding:12px 14px;
-                                background:#161616;
-                                border:1px solid rgba(255,255,255,0.08);
-                                border-radius:10px;'>
-  <div style='margin-bottom:6px;'>
-    <b style='color:#f0f0f0;font-size:14px;'>{label}</b>{badge}
-  </div>
-  <div style='color:#c8c8c8;font-size:13.5px;line-height:1.6;'>
-    {reason}
-  </div>{text_html}{rule_html}
-</div>"""
-
-                cards.append(card)
-
-            answer = "".join(cards)
+            answer = "<br><br><br>".join(cards)
             self.memory.add(question, answer)
             return answer
 

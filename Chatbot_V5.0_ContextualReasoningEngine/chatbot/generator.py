@@ -76,3 +76,94 @@ Return JSON ONLY in this format:
 
         except Exception:
             return {"answer": text}
+
+
+    # =====================================================
+    # SYNTHESISE BRIEFING CONTEXT
+    # =====================================================
+
+    def synthesise_exclusions(self, entries, mode="exclusion"):
+        """
+        Synthesises one "According to the briefing," sentence per section.
+
+        mode="exclusion" — what the section requires that the article lacks
+        mode="inclusion" — what the section requires that the article satisfies
+
+        Returns { section_slug: sentence }
+        """
+
+        sections_payload = []
+
+        for e in entries:
+            sections_payload.append({
+                "section":       e["section"],
+                "section_label": e["section_label"],
+                "reason":        e["reason"],
+                "relevant_text": e.get("relevant_text") or "",
+                "briefing_rule": e.get("briefing_rule") or "",
+            })
+
+        if mode == "inclusion":
+            instruction = (
+                'For each section below, write ONE clear sentence (max 40 words) starting with '
+                '"According to the briefing," that explains what criteria this section requires '
+                'and why this article satisfies them, based on the briefing_rule provided.'
+            )
+        else:
+            instruction = (
+                'For each section below, write ONE clear sentence (max 40 words) starting with '
+                '"According to the briefing," that explains what the section requires or explicitly '
+                'excludes, based on the briefing_rule provided.'
+            )
+
+        prompt = f"""
+You are helping explain briefing rules to a media analyst.
+
+{instruction}
+
+Rules:
+- Start every sentence with "According to the briefing,"
+- Focus on what the section requires or excludes, not on the article itself
+- Write in plain English, no jargon
+- Do not use em dashes
+- Do not repeat the section name in the sentence
+
+Sections:
+{json.dumps(sections_payload, indent=2)}
+
+Return ONLY valid JSON, one key per section slug:
+
+{{
+  "section_slug_1": "According to the briefing, ...",
+  "section_slug_2": "According to the briefing, ..."
+}}
+
+No extra keys, no markdown, no preamble.
+"""
+
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=1024,
+            temperature=0.3,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        print("\n===== SYNTHESISER TOKEN USAGE =====")
+        print("Input Tokens: ", response.usage.input_tokens)
+        print("Output Tokens:", response.usage.output_tokens)
+        print("===================================\n")
+
+        text = response.content[0].text.strip()
+
+        if text.startswith("```"):
+            text = text.replace("```json", "").replace("```", "").strip()
+
+        try:
+            return json.loads(text)
+        except Exception:
+            return {e["section"]: e["reason"] for e in entries}
