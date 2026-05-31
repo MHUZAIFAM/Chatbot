@@ -1,20 +1,33 @@
-from anthropic import Anthropic
-from dotenv import load_dotenv
-import os
+import asyncio
 import json
+from claude_agent_sdk import query, ClaudeAgentOptions, ResultMessage
 
 
 class AnswerGenerator:
 
-    def __init__(self, api_key):
+    def __init__(self, api_key=None):
+        # api_key ignored — auth via Claude subscription (claude auth login)
+        pass
 
-        load_dotenv()
+    def _run(self, prompt):
+        """Run a single-turn query via Agent SDK and return the result text."""
 
-        self.client = Anthropic(
-            api_key=os.getenv("ANTHROPIC_API_KEY")
-        )
+        result_text = ""
 
-        self.model = "claude-sonnet-4-20250514"
+        async def _query():
+            nonlocal result_text
+            async for message in query(
+                prompt=prompt,
+                options=ClaudeAgentOptions(
+                    allowed_tools=[],
+                    permission_mode="dontAsk",
+                ),
+            ):
+                if isinstance(message, ResultMessage):
+                    result_text = message.result or ""
+
+        asyncio.run(_query())
+        return result_text
 
 
     # =====================================================
@@ -39,7 +52,6 @@ User Question:
 {question}
 
 Instructions:
-
 - Use ONLY the dataset records provided.
 - Do NOT invent information.
 - If the dataset does not contain the answer, say so.
@@ -49,31 +61,13 @@ Return JSON ONLY in this format:
 {{ "answer": "" }}
 """
 
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=2048,
-            temperature=0.3,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
-
-        print("\n===== GENERATOR TOKEN USAGE =====")
-        print("Input Tokens:", response.usage.input_tokens)
-        print("Output Tokens:", response.usage.output_tokens)
-        print("==================================\n")
-
-        text = response.content[0].text.strip()
+        text = self._run(prompt).strip()
 
         if text.startswith("```"):
             text = text.replace("```json", "").replace("```", "").strip()
 
         try:
             return json.loads(text)
-
         except Exception:
             return {"answer": text}
 
@@ -83,17 +77,8 @@ Return JSON ONLY in this format:
     # =====================================================
 
     def synthesise_exclusions(self, entries, mode="exclusion"):
-        """
-        Synthesises one "According to the briefing," sentence per section.
-
-        mode="exclusion" — what the section requires that the article lacks
-        mode="inclusion" — what the section requires that the article satisfies
-
-        Returns { section_slug: sentence }
-        """
 
         sections_payload = []
-
         for e in entries:
             sections_payload.append({
                 "section":       e["section"],
@@ -141,24 +126,7 @@ Return ONLY valid JSON, one key per section slug:
 No extra keys, no markdown, no preamble.
 """
 
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=1024,
-            temperature=0.3,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
-
-        print("\n===== SYNTHESISER TOKEN USAGE =====")
-        print("Input Tokens: ", response.usage.input_tokens)
-        print("Output Tokens:", response.usage.output_tokens)
-        print("===================================\n")
-
-        text = response.content[0].text.strip()
+        text = self._run(prompt).strip()
 
         if text.startswith("```"):
             text = text.replace("```json", "").replace("```", "").strip()

@@ -1,20 +1,33 @@
-import os
+import asyncio
 import json
-from anthropic import Anthropic
-from dotenv import load_dotenv
+from claude_agent_sdk import query, ClaudeAgentOptions, ResultMessage
 
 
 class Planner:
 
-    def __init__(self, api_key):
+    def __init__(self, api_key=None):
+        # api_key ignored — auth via Claude subscription (claude auth login)
+        pass
 
-        load_dotenv()
+    def _run(self, prompt):
+        """Run a single-turn query via Agent SDK and return the result text."""
 
-        self.client = Anthropic(
-            api_key=os.getenv("ANTHROPIC_API_KEY")
-        )
+        result_text = ""
 
-        self.model = "claude-sonnet-4-20250514"
+        async def _query():
+            nonlocal result_text
+            async for message in query(
+                prompt=prompt,
+                options=ClaudeAgentOptions(
+                    allowed_tools=[],
+                    permission_mode="dontAsk",
+                ),
+            ):
+                if isinstance(message, ResultMessage):
+                    result_text = message.result or ""
+
+        asyncio.run(_query())
+        return result_text
 
     def plan(self, question, context="", sections=""):
 
@@ -39,39 +52,28 @@ Available operations:
 
 item_rank → item ranking
 item_section → item placement section
-
 item_details → item information
 item_field → specific item field
-
 selected_reason → why item was selected
 other_section_reasons → why not placed elsewhere
 unselected_reasons → why item was unselected
-
 highest_ranked → highest ranked items
 lowest_ranked → lowest ranked items
 highest_ranked_section → highest ranked item in section
 lowest_ranked_section → lowest ranked item in section
 top_ranked_items → top ranked items
-
 filter_items → dynamic filtering
 
 Rules:
-
 - item IDs → fill item_id
 - section names → fill section
-
 - item details/info/about item → item_details
-
 - item properties/headline/score/page/date/outlet/etc → item_field
-
 - placement questions → item_field with field "ordering section"
-
 - why selected → selected_reason
 - why not elsewhere → other_section_reasons
 - why unselected → unselected_reasons
-
 - filtering/above/below/contains/search/find → filter_items
-
 - unknown intent → operation "unknown"
 
 Return ONLY valid JSON:
@@ -88,32 +90,14 @@ Return ONLY valid JSON:
 }}
 """
 
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=512,
-            temperature=0,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
-
-        print("\n===== PLANNER TOKEN USAGE =====")
-        print("Input Tokens:", response.usage.input_tokens)
-        print("Output Tokens:", response.usage.output_tokens)
-        print("================================\n")
-
-        text = response.content[0].text.strip()
+        text = self._run(prompt).strip()
 
         if text.startswith("```"):
             text = text.replace("```json", "").replace("```", "").strip()
 
         try:
             return json.loads(text)
-
-        except:
+        except Exception:
             return {
                 "operation": "unknown",
                 "section": None,
