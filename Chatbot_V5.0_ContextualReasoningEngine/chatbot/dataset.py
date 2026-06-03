@@ -1,4 +1,5 @@
 import json
+import os
 import pandas as pd
 
 
@@ -55,6 +56,14 @@ class DatasetManager:
         self.ordering_section_col = self.detect_column(["ordering_section"])
         self.ordering_reason_col = self.detect_column(["ordering_reason"])
         self.ordering_relevant_text_col = self.detect_column(["ordering_relevant_text"])
+
+        # ================================
+        # LEAD / SIMILAR COLUMNS
+        # ================================
+
+        self.item_type_col      = self.detect_column(["item_type"])
+        self.is_lead_col        = self.detect_column(["is_lead"])
+        self.lead_article_id_col = self.detect_column(["lead_article_id"])
 
         # ================================
         # VALIDATION
@@ -118,6 +127,25 @@ class DatasetManager:
                 print(f"Loaded section prompts for: {list(self.section_prompts.keys())}")
             except Exception as e:
                 print(f"Warning: Could not load section prompts: {e}")
+
+        # ================================
+        # ORDERING GUIDELINES
+        # ================================
+
+        self.ordering_guidelines = {}
+
+        ordering_path = None
+        if section_prompts_path:
+            ordering_path = os.path.join(os.path.dirname(section_prompts_path), "ordering_guidelines.json")
+
+        if ordering_path and os.path.exists(ordering_path):
+            try:
+                with open(ordering_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                self.ordering_guidelines = data.get("ordering_guidelines", {})
+                print(f"Loaded ordering guidelines.")
+            except Exception as e:
+                print(f"Warning: Could not load ordering guidelines: {e}")
 
         # ================================
         # SECTION PROMPT COVERAGE CHECK

@@ -57,6 +57,7 @@ item_field → specific item field
 selected_reason → why item was selected
 other_section_reasons → why not placed elsewhere
 unselected_reasons → why item was unselected
+item_type_reason → why item is lead or similar (lead/similar status, media type, outlet priority)
 highest_ranked → highest ranked items
 lowest_ranked → lowest ranked items
 highest_ranked_section → highest ranked item in section
@@ -73,6 +74,7 @@ Rules:
 - why selected → selected_reason
 - why not elsewhere → other_section_reasons
 - why unselected → unselected_reasons
+- why lead / why similar / why not lead / lead or similar / item type → item_type_reason
 - filtering/above/below/contains/search/find → filter_items
 - unknown intent → operation "unknown"
 

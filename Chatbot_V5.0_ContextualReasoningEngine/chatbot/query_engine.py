@@ -98,6 +98,120 @@ class QueryEngine:
 
         self.sections = dataset_manager.sections
 
+        self.ordering_guidelines = dataset_manager.ordering_guidelines
+
+    def _get_outlet_priority(self, media_item_type, outlet):
+        """
+        Look up the outlet priority number from ordering_guidelines.
+        Returns (priority_number, tier_label) or (None, None) if not found.
+        """
+        if not self.ordering_guidelines or not outlet:
+            return None, None
+
+        media_type_lower = str(media_item_type).lower()
+
+        if "newspaper" in media_type_lower or "print" in media_type_lower:
+            table = self.ordering_guidelines.get("print", {})
+        elif "online" in media_type_lower:
+            table = self.ordering_guidelines.get("online", {})
+        elif "radio" in media_type_lower or "broadcast" in media_type_lower or "television" in media_type_lower:
+            table = self.ordering_guidelines.get("broadcast", {})
+        else:
+            table = {}
+
+        outlet_lower = str(outlet).lower()
+        for key, priority in table.items():
+            if key.lower() in outlet_lower or outlet_lower in key.lower():
+                return priority, key
+
+        return None, None
+
+    def _get_media_type_priority(self, media_item_type):
+        """Return numeric priority for media type (Print=1, Online=2, Broadcast=3)."""
+        if not self.ordering_guidelines:
+            return None
+        media_type_priority = self.ordering_guidelines.get("media_type_priority", {})
+        media_lower = str(media_item_type).lower()
+        if "newspaper" in media_lower or "print" in media_lower:
+            return media_type_priority.get("Print")
+        elif "online" in media_lower:
+            return media_type_priority.get("Online")
+        elif "radio" in media_lower or "broadcast" in media_lower or "television" in media_lower:
+            return media_type_priority.get("Broadcast")
+        return None
+
+    def get_similar_items(self, lead_item_id):
+        """Return list of item IDs that are Similar and point to this lead_item_id."""
+        ds = self.dataset
+        if not ds.lead_article_id_col or not ds.item_type_col:
+            return []
+
+        mask = (
+            (self.df[ds.lead_article_id_col].astype(str) == str(lead_item_id))
+            & (self.df[ds.item_type_col].astype(str).str.lower() == "similar")
+        )
+        return self.df[mask][self.id_col].astype(str).tolist()
+
+    def item_type_reason(self, item_id):
+        """
+        Returns a dict explaining why this item is Lead or Similar,
+        including comparison with lead article if item is Similar.
+        """
+        row = self.df[self.df[self.id_col].astype(str) == str(item_id)]
+
+        if row.empty:
+            return None
+
+        row = row.iloc[0]
+
+        ds = self.dataset
+
+        item_type      = str(row.get(ds.item_type_col, "")).strip() if ds.item_type_col else ""
+        is_lead        = str(row.get(ds.is_lead_col, "")).strip() if ds.is_lead_col else ""
+        lead_id        = str(row.get(ds.lead_article_id_col, "")).strip() if ds.lead_article_id_col else ""
+        media_type     = str(row.get("Media Item Type", "")).strip()
+        outlet         = str(row.get("Media Outlet", "")).strip()
+        rank           = row.get(self.rank_col)
+        section        = self.item_section(item_id)
+
+        media_priority  = self._get_media_type_priority(media_type)
+        outlet_priority, outlet_tier = self._get_outlet_priority(media_type, outlet)
+
+        result = {
+            "item_id":         str(item_id),
+            "item_type":       item_type,
+            "is_lead":         is_lead,
+            "lead_id":         lead_id,
+            "media_type":      media_type,
+            "outlet":          outlet,
+            "media_priority":  media_priority,
+            "outlet_priority": outlet_priority,
+            "outlet_tier":     outlet_tier,
+            "rank":            int(rank) if rank and str(rank) != "nan" else None,
+            "section":         section,
+            "lead_item":       None,
+        }
+
+        # If similar, also fetch lead article details for comparison
+        if item_type.lower() == "similar" and lead_id and lead_id != str(item_id):
+            lead_row = self.df[self.df[self.id_col].astype(str) == lead_id]
+            if not lead_row.empty:
+                lr = lead_row.iloc[0]
+                l_media_type = str(lr.get("Media Item Type", "")).strip()
+                l_outlet     = str(lr.get("Media Outlet", "")).strip()
+                l_priority   = self._get_media_type_priority(l_media_type)
+                l_out_pri, l_out_tier = self._get_outlet_priority(l_media_type, l_outlet)
+                result["lead_item"] = {
+                    "item_id":         lead_id,
+                    "media_type":      l_media_type,
+                    "outlet":          l_outlet,
+                    "media_priority":  l_priority,
+                    "outlet_priority": l_out_pri,
+                    "outlet_tier":     l_out_tier,
+                }
+
+        return result
+
     def selected_reason(self, item_id):
 
         row = self.df[self.df[self.id_col].astype(str) == str(item_id)]
