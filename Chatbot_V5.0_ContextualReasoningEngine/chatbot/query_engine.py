@@ -687,3 +687,31 @@ class QueryEngine:
             })
 
         return results
+    def item_placement_audit(self, item_id):
+        """
+        Gather all context needed for the AI placement audit.
+        Returns a dict with article fields + current reasons for all sections.
+        """
+        row = self.df[self.df[self.id_col].astype(str) == str(item_id)]
+
+        if row.empty:
+            return None
+
+        row = row.iloc[0]
+        ds = self.dataset
+
+        # Core article fields
+        context = {
+            "item_id":         str(item_id),
+            "Headline":        str(row.get("Headline", "") or ""),
+            "Full Text":       str(row.get(ds.full_text_col, "") or "") if ds.full_text_col else "",
+            "Summary":         str(row.get(ds.summary_col, "") or "") if ds.summary_col else "",
+            "Media Outlet":    str(row.get(ds.media_outlet_col, "") or "") if ds.media_outlet_col else "",
+            "Media Item Type": str(row.get("Media Item Type", "") or ""),
+            "Date":            str(row.get(ds.date_col, "") or "") if ds.date_col else "",
+            "State":           str(row.get("state", "") or ""),
+            "wordCount":       str(row.get(ds.wordcount_col, "") or "") if ds.wordcount_col else "",
+            "current_section": self.item_section(item_id),
+        }
+
+        return context

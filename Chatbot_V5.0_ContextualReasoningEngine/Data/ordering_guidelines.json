@@ -1,88 +1,31 @@
 {
   "ordering_guidelines": {
-    "sorting_logic": [
-      "Order By Heading",
-      "Order By Media Type Priority",
-      "Order By Media Outlet Priority (with TAC Special Priority)",
-      "Order By Date (Most Recent First)",
-      "Order By Page Number (Lowest First)"
-    ],
     "media_type_priority": {
       "Print": 1,
       "Online": 2,
       "Broadcast": 3
     },
-    "prioritized_tac_outlets": {
-      "description": "Clips relating to TAC from these outlets should lead their respective sections",
-      "outlets": [
-        "Channel 7",
-        "Channel 9",
-        "ABC",
-        "Channel 10",
-        "The Age",
-        "Herald Sun",
-        "The Australian",
-        "Australian Financial Review"
-      ]
-    },
     "print": {
-      "The Age": 1,
-      "Herald Sun": 1,
-      "The Australian": 2,
-      "Australian Financial Review": 2,
-      "Victorian regional publications": 3,
-      "Sydney Morning Herald": 4,
-      "Daily Telegraph": 5,
-      "Adelaide Advertiser": 5,
-      "Courier Mail": 5,
-      "West Australian": 5,
-      "Canberra Times": 5,
-      "Hobart Mercury": 5,
-      "Northern Territory News": 5
+      "The Press (Christchurch)": 1,
+      "The New Zealand Herald / Weekend Herald": 2,
+      "Otago Daily Times (ODT)": 3,
+      "The Dominion Post / Post Wellington": 4,
+      "National Business Review (NBR)": 5
     },
     "online": {
-      "The Age online": 1,
-      "Herald Sun online": 1,
-      "The Australian online": 2,
-      "Australian Financial Review online": 2,
-      "Victorian regional online": 3,
-      "Sydney Morning Herald online": 4,
-      "WA Today": 4,
-      "Brisbane Times": 4,
-      "News Corp online items": 5,
-      "ABC Online": 6,
-      "Guardian Australia": 7,
-      "The New Daily": 8,
-      "Regional websites": 9,
-      "Trade/ Industry websites": 10
+      "stuff.co.nz": 1,
+      "NZ Herald Online (nzherald.co.nz)": 2,
+      "RNZ News (rnz.co.nz)": 3,
+      "Business Desk": 4,
+      "1News Online (1news.co.nz)": 5,
+      "Newshub (archive/news portal)": 6,
+      "Crux / Wanaka App (local Lakes District / Central Otago digital platforms)": 7
     },
     "broadcast": {
-      "Channel 7": 1,
-      "Channel 9": 1,
-      "Channel 10": 1,
-      "ABC": 1,
-      "Sky News": 1,
-      "SBS": 1,
-      "Southern Cross": 2,
-      "WIN": 2,
-      "NBN": 2,
-      "ABC Radio Melbourne": 3,
-      "3AW": 3,
-      "ABC Radio Sydney": 4,
-      "2GB": 4,
-      "2SM": 4,
-      "ABC Radio Canberra": 4,
-      "2CC": 4,
-      "ABC Radio Brisbane": 4,
-      "4BC": 4,
-      "ABC Radio Adelaide": 4,
-      "5AA": 4,
-      "ABC Radio Perth": 4,
-      "6PR": 4,
-      "ABC Radio Hobart": 4,
-      "Regional AM": 5,
-      "Capital city FM": 5,
-      "Regional FM": 5
+      "VNZ 1 (1News, Breakfast, Seven Sharp)": 1,
+      "Three (ThreeNews)": 2,
+      "RNZ National (Morning Report, Checkpoint)": 3,
+      "Newstalk ZB": 4
     }
   }
 }

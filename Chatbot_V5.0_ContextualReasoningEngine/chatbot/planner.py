@@ -58,6 +58,7 @@ selected_reason → why item was selected
 other_section_reasons → why not placed elsewhere
 unselected_reasons → why item was unselected
 item_type_reason → why item is lead or similar (lead/similar status, media type, outlet priority)
+item_placement_audit → AI audit of whether item was placed correctly, should it be elsewhere, guideline refinement
 highest_ranked → highest ranked items
 lowest_ranked → lowest ranked items
 highest_ranked_section → highest ranked item in section
@@ -75,6 +76,7 @@ Rules:
 - why not elsewhere → other_section_reasons
 - why unselected → unselected_reasons
 - why lead / why similar / why not lead / lead or similar / item type → item_type_reason
+- was it placed correctly / should it be in another section / should it have been selected / shouldn't it be in / was this correctly unselected / placement correct / placed in wrong section → item_placement_audit
 - filtering/above/below/contains/search/find → filter_items
 - unknown intent → operation "unknown"
 

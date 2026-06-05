@@ -167,6 +167,25 @@ class ChatbotAgent:
         operation = plan.get("operation")
         item_id   = plan.get("item_id")
 
+        # ── PLACEMENT AUDIT OVERRIDE ───────────────────────────
+        # Catch audit questions before the generic "why" handler grabs them.
+
+        _AUDIT_KW = [
+            "placed correctly", "placement correct", "correctly placed",
+            "correctly unselected", "should it be", "shouldn't it be",
+            "should it have been", "placed in wrong", "wrong section",
+            "placed incorrectly", "incorrect placement", "should be in",
+            "shouldnt it be", "should this be in",
+        ]
+        _is_audit_q = (
+            item_id
+            and any(kw in q_lower for kw in _AUDIT_KW)
+        )
+
+        if _is_audit_q:
+            plan["operation"] = "item_placement_audit"
+            operation         = "item_placement_audit"
+
         # ── LEAD / SIMILAR OVERRIDE ────────────────────────────
         # If question contains lead/similar keywords and planner gave us an
         # item_id, force item_type_reason regardless of what planner said.
@@ -213,6 +232,7 @@ class ChatbotAgent:
                 "other_section_reasons",
                 "unselected_reasons",
                 "item_type_reason",
+                "item_placement_audit",
             ]
         ):
             plan["operation"] = "selected_reason"
@@ -530,6 +550,140 @@ class ChatbotAgent:
                 briefing_sentence=briefing_sentence,
             )
 
+            self.memory.add(question, answer)
+            return answer
+
+        # ── ITEM PLACEMENT AUDIT ────────────────────────────────
+
+        if operation == "item_placement_audit":
+
+            if not result or not isinstance(result, dict):
+                answer = "Could not retrieve item context for audit."
+                self.memory.add(question, answer)
+                return answer
+
+            # Check if user specified a claimed section in the question
+            # e.g. "was it correctly placed in Accidents?" or "placed in Road Safety?"
+            actual_section  = result.get("current_section", "Unselected")
+            claimed_section = actual_section  # default to actual
+
+            section_slugs = self.dataset_manager.sections
+            for slug in section_slugs:
+                pretty = pretty_section(slug).lower()
+                if pretty in q_lower or slug.lower().replace("_", " ") in q_lower:
+                    claimed_section = slug
+                    break
+
+            # Run the AI audit against the CLAIMED section
+            audit = self.generator.audit_placement(
+                item_context=result,
+                current_section=claimed_section,
+                actual_section=actual_section,
+                all_section_prompts=self.dataset_manager.section_prompts,
+            )
+
+            decision          = audit.get("decision", "")
+            correct           = audit.get("correct")
+            columns_used      = audit.get("columns_used", [])
+            guideline_used    = audit.get("guideline_used", "")
+            suggested_section = audit.get("suggested_section")
+            suggested_reason  = audit.get("suggested_section_reason")
+            refinement_needed = audit.get("refinement_needed", False)
+            refined_rule      = audit.get("refined_rule")
+            refined_section   = audit.get("refined_rule_section")
+            current_section   = claimed_section
+
+            # Correctness badge
+            user_asked_wrong_section = (not correct) and (claimed_section != actual_section)
+            genuinely_misplaced      = (not correct) and (claimed_section == actual_section)
+
+            if correct is True:
+                verdict_badge = "<span style='color:#34d399;font-weight:600;'>Correctly Placed</span>"
+            elif user_asked_wrong_section:
+                # Item IS correctly placed — user just asked about the wrong section
+                verdict_badge = "<span style='color:#34d399;font-weight:600;'>Correctly Placed</span>"
+            elif genuinely_misplaced:
+                verdict_badge = "<span style='color:#ef4444;font-weight:600;'>Incorrectly Placed</span>"
+            else:
+                verdict_badge = "<span style='color:#f59e0b;font-weight:600;'>Uncertain</span>"
+
+            # Pretty-print any raw section slugs in the AI decision text
+            pretty_decision = decision
+            for slug in self.dataset_manager.sections:
+                pretty_decision = pretty_decision.replace(slug, pretty_section(slug))
+
+            # Decision (plain text)
+            decision_html = f"{verdict_badge}<br><br>{pretty_decision}"
+            if suggested_section and not correct:
+                if user_asked_wrong_section:
+                    decision_html += (
+                        f"<br><br>The item is correctly placed in "
+                        f"<b>{pretty_section(actual_section)}</b> — "
+                        f"{pretty_section(claimed_section)} is not the right section for this item."
+                    )
+                else:
+                    decision_html += (
+                        f"<br><br>It should be placed in "
+                        f"<b>{pretty_section(suggested_section)}</b>. "
+                        f"{suggested_reason or ''}"
+                    )
+
+            # Shared card row helper
+            def audit_row(label, value):
+                return (
+                    f"<tr style='border-bottom:1px solid rgba(255,255,255,0.06);'>"
+                    f"<td style='padding:8px 16px;color:#f0f0f0;font-weight:600;white-space:nowrap;vertical-align:top;'>{label}</td>"
+                    f"<td style='padding:8px 16px;color:#c8c8c8;'>{value}</td>"
+                    f"</tr>"
+                )
+
+            # Details card
+            actual_section_display = result.get("current_section", "Unselected")
+            details_rows = (
+                audit_row("Actual Section",    pretty_section(actual_section_display))
+                + audit_row("Evaluated Against", pretty_section(current_section))
+                + audit_row("Placement",       "Correct" if correct else ("Incorrect" if correct is False else "Uncertain"))
+                + audit_row("Columns Examined", ", ".join(columns_used) if columns_used else "N/A")
+                + audit_row("Guideline Applied", guideline_used or "N/A")
+            )
+            if suggested_section:
+                details_rows += audit_row("Suggested Section", pretty_section(suggested_section))
+
+            details_card = (
+                f"<br><br>"
+                f"<details style='border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow:hidden;'>"
+                f"<summary style='padding:10px 16px;cursor:pointer;user-select:none;list-style:none;color:#8a8a8a;font-size:13px;outline:none;'>Details</summary>"
+                f"<div style='border-top:1px solid rgba(255,255,255,0.08);'>"
+                f"<table style='width:100%;border-collapse:collapse;font-size:13.5px;'>{details_rows}</table>"
+                f"</div></details>"
+            )
+
+            # Refinement card — always shown
+            if refinement_needed and refined_rule:
+                ref_rows = (
+                    audit_row("Section", pretty_section(refined_section or ""))
+                    + audit_row("Status", "Refinement Suggested")
+                    + audit_row("Refined Rule",
+                                f"<pre style='white-space:pre-wrap;font-family:inherit;margin:0;color:#c8c8c8;'>{refined_rule}</pre>")
+                )
+                ref_content = (
+                    f"<table style='width:100%;border-collapse:collapse;font-size:13.5px;'>{ref_rows}</table>"
+                )
+            else:
+                ref_content = (
+                    f"<div style='padding:12px 16px;color:#6b7280;font-size:13.5px;'>"
+                    f"The current guidelines are appropriate for this item. No refinement needed.</div>"
+                )
+
+            refinement_card = (
+                f"<br>"
+                f"<details style='border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow:hidden;'>"
+                f"<summary style='padding:10px 16px;cursor:pointer;user-select:none;list-style:none;color:#8a8a8a;font-size:13px;outline:none;'>Guideline Refinement</summary>"
+                f"<div style='border-top:1px solid rgba(255,255,255,0.08);'>{ref_content}</div>"
+                f"</details>"
+            )
+
+            answer = decision_html + details_card + refinement_card
             self.memory.add(question, answer)
             return answer
 

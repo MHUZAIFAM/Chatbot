@@ -58,6 +58,9 @@ class Executor:
         if op == "item_type_reason":
             return self.qe.item_type_reason(item_id)
 
+        if op == "item_placement_audit":
+            return self.qe.item_placement_audit(item_id)
+
         if op == "other_section_reasons":
             return self.qe.other_section_reasons(
                 item_id,
