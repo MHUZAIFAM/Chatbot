@@ -347,3 +347,80 @@ Use this EXACT format:
 Output the refined criteria only. No preamble, no explanation.
 """
         return self._run(prompt).strip()
+
+
+    # =====================================================
+    # HYPOTHETICAL PLACEMENT REFINEMENT
+    # =====================================================
+
+    def hypothetical_refinement(self, item_context, target_section,
+                                target_rule, all_section_names):
+        """
+        Given an item and a target section the user wants to place it in,
+        generate the minimal changes to the section guideline that would
+        allow this item to be correctly included.
+        """
+
+        section_names_list = "\n".join(
+            f"- {s.replace('_', ' ').title()}" for s in all_section_names
+        )
+        category   = target_section.replace("_", " ").title()
+        headline   = item_context.get("Headline", "")
+        summary    = str(item_context.get("Summary", ""))[:400]
+        full_text  = str(item_context.get("Full Text", ""))[:1000]
+
+        prompt = f"""
+You are a Senior QA Analyst. A user wants to place the following article into the "{category}" section.
+
+ARTICLE:
+- Headline: {headline}
+- Summary: {summary}
+- Full Text excerpt: {full_text}
+
+CURRENT GUIDELINE FOR "{category}":
+---
+{target_rule}
+---
+
+Your task: Rewrite the FULL guideline for "{category}" with the MINIMAL changes needed so this article would be correctly included. Do not change the overall intent or scope of the section — only add or adjust what is strictly necessary to capture this article.
+
+Make the changes as small as possible. If a new inclusion criterion is needed, add it. If an exclusion needs a carve-out, add it. Keep everything else exactly the same.
+
+Use this EXACT format:
+
+**{category}**
+[One-sentence overview.]
+
+**Include coverage on the following:**
+1. [Specific keywords/entities/people]
+- [Entity A]
+
+2. [Primary subject matter]
+- [Sub-topic A]
+
+3. [Secondary subject matter]
+- [Sub-topic A]
+
+**Exclusions:**
+1. Prioritize [Section A] over [Section B] when coverage involves [nuance]
+- [Sub-item A]
+
+2. [Entities/keywords to exclude with reason]
+- [Entity A]
+
+3. [Subject matter to exclude with reason]
+- [Sub-item A]
+
+Rules:
+- Use original descriptions verbatim where possible
+- List every person/entity individually — no "..." or "etc."
+- Redirection syntax: "Prioritize [A] over [B] when coverage involves [nuance]"
+- No introductory or concluding remarks
+- Mark any NEW or CHANGED lines with [ADDED] or [CHANGED] at the end of that line
+
+Sibling sections:
+{section_names_list}
+
+Output the revised guideline only.
+"""
+        return self._run(prompt).strip()

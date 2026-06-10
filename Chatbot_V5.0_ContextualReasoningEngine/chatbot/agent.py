@@ -167,6 +167,30 @@ class ChatbotAgent:
         operation = plan.get("operation")
         item_id   = plan.get("item_id")
 
+        # ── HYPOTHETICAL PLACEMENT OVERRIDE ───────────────────
+        # "if I were to place this in X, what changes are needed?"
+        # User is asking what the guideline would need to say — always
+        # generates a refinement, regardless of actual placement.
+
+        _HYPOTHETICAL_KW = [
+            "if i were to place", "if i place", "if we place",
+            "if i wanted to place", "if i want to place",
+            "what changes", "what would need to change",
+            "what necessary changes", "necessary changes to the",
+            "changes to the selection prompt", "changes to the guideline",
+            "changes to the section prompt", "what would the guideline",
+            "how would the guideline", "to include this in",
+            "to place this in", "to put this in",
+        ]
+        _is_hypothetical_q = (
+            item_id
+            and any(kw in q_lower for kw in _HYPOTHETICAL_KW)
+        )
+
+        if _is_hypothetical_q:
+            plan["operation"] = "hypothetical_placement"
+            operation         = "hypothetical_placement"
+
         # ── PLACEMENT AUDIT OVERRIDE ───────────────────────────
         # Catch audit questions before the generic "why" handler grabs them.
 
@@ -176,6 +200,9 @@ class ChatbotAgent:
             "should it have been", "placed in wrong", "wrong section",
             "placed incorrectly", "incorrect placement", "should be in",
             "shouldnt it be", "should this be in",
+            "where should this", "where should it", "where does this belong",
+            "where does it belong", "what section should", "which section should",
+            "what section does", "which section does",
         ]
         _is_audit_q = (
             item_id
@@ -186,16 +213,38 @@ class ChatbotAgent:
             plan["operation"] = "item_placement_audit"
             operation         = "item_placement_audit"
 
+        # ── UNSELECTED REASONS OVERRIDE ───────────────────────
+        # "why wasn't it placed in any section?" → unselected_reasons
+        # Must check BEFORE lead/similar guard since both contain "why wasn't"
+
+        _UNSELECTED_KW = [
+            "any section", "any of the sections", "not placed in any",
+            "wasn't placed in any", "wasnt placed in any",
+            "not selected", "why unselected", "why was it unselected",
+            "why wasn't it selected", "wasnt it selected",
+        ]
+        _is_unselected_q = (
+            item_id
+            and any(kw in q_lower for kw in _UNSELECTED_KW)
+        )
+
+        if _is_unselected_q:
+            plan["operation"] = "unselected_reasons"
+            operation         = "unselected_reasons"
+
         # ── LEAD / SIMILAR OVERRIDE ────────────────────────────
-        # If question contains lead/similar keywords and planner gave us an
-        # item_id, force item_type_reason regardless of what planner said.
+        # Tightened: only fire on explicitly lead/similar vocabulary,
+        # NOT on "why wasn't" which can belong to unselected questions.
 
         _LEAD_SIMILAR_KW = [
-            "lead", "similar", "not a lead", "not lead", "why lead",
-            "why similar", "why not lead", "why wasn't", "why was it lead",
+            "lead article", "similar article", "not a lead", "not lead",
+            "why lead", "why similar", "why not lead", "why was it lead",
+            "why was it similar", "is it lead", "is it similar",
+            "lead item", "similar item",
         ]
         _is_lead_similar_q = (
-            item_id
+            not _is_unselected_q  # don't override unselected detection
+            and item_id
             and any(kw in q_lower for kw in _LEAD_SIMILAR_KW)
         )
 
@@ -212,7 +261,8 @@ class ChatbotAgent:
             r"\b\d+(?:st|nd|rd|th)\b",
         ]
         _is_rank_why = (
-            not _is_lead_similar_q  # don't override lead/similar detection
+            not _is_lead_similar_q
+            and not _is_unselected_q
             and q_lower.startswith("why")
             and item_id
             and any(re.search(p, q_lower) for p in _RANK_WHY_PATTERNS)
@@ -225,6 +275,7 @@ class ChatbotAgent:
 
         elif (
             not _is_lead_similar_q
+            and not _is_unselected_q
             and q_lower.startswith("why")
             and item_id
             and operation not in [
@@ -553,6 +604,82 @@ class ChatbotAgent:
             self.memory.add(question, answer)
             return answer
 
+        # ── HYPOTHETICAL PLACEMENT ─────────────────────────────
+
+        if operation == "hypothetical_placement":
+
+            if not result or not isinstance(result, dict):
+                answer = "Could not retrieve item context."
+                self.memory.add(question, answer)
+                return answer
+
+            # Detect target section from question
+            actual_section = result.get("current_section", "Unselected")
+            target_section = None
+            for slug in self.dataset_manager.sections:
+                pretty = pretty_section(slug).lower()
+                if pretty in q_lower or slug.lower().replace("_", " ") in q_lower:
+                    target_section = slug
+                    break
+
+            if not target_section:
+                answer = "Please specify which section you'd like to place this item in."
+                self.memory.add(question, answer)
+                return answer
+
+            # Generate what the guideline would need to say
+            refined = self.generator.hypothetical_refinement(
+                item_context=result,
+                target_section=target_section,
+                target_rule=self.dataset_manager.section_prompts.get(target_section, ""),
+                all_section_names=self.dataset_manager.sections,
+            )
+
+            def md_to_html(text):
+                import re as _re
+                text = _re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+                lines = text.split("\n")
+                out = []
+                for line in lines:
+                    stripped = line.strip()
+                    if stripped.startswith("- "):
+                        out.append(f"<div style='display:flex;gap:8px;margin:2px 0;padding-left:8px;'><span style='color:#6366f1;flex-shrink:0;'>•</span><span>{stripped[2:]}</span></div>")
+                    elif stripped.startswith("### "):
+                        out.append(f"<div style='color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;margin-top:10px;margin-bottom:4px;'>{stripped[4:]}</div>")
+                    elif stripped == "":
+                        out.append("<div style='height:6px;'></div>")
+                    else:
+                        out.append(f"<div style='margin:3px 0;'>{stripped}</div>")
+                return "".join(out)
+
+            intro = (
+                f"To place this item in <b>{pretty_section(target_section)}</b>, "
+                f"the section guideline would need the following changes:"
+            )
+
+            refined_html = md_to_html(refined)
+
+            ref_rows = (
+                f"<tr style='border-bottom:1px solid rgba(255,255,255,0.06);'>"
+                f"<td style='padding:8px 16px;color:#f0f0f0;font-weight:600;white-space:nowrap;vertical-align:top;'>Section</td>"
+                f"<td style='padding:8px 16px;color:#c8c8c8;'>{pretty_section(target_section)}</td></tr>"
+                f"<tr><td style='padding:8px 16px;color:#f0f0f0;font-weight:600;vertical-align:top;'>Revised Guideline</td>"
+                f"<td style='padding:8px 16px;color:#c8c8c8;'><div style='line-height:1.7;'>{refined_html}</div></td></tr>"
+            )
+
+            card = (
+                f"<br><br>"
+                f"<details style='border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow:hidden;' open>"
+                f"<summary style='padding:10px 16px;cursor:pointer;user-select:none;list-style:none;color:#8a8a8a;font-size:13px;outline:none;'>Hypothetical Guideline Change</summary>"
+                f"<div style='border-top:1px solid rgba(255,255,255,0.08);'>"
+                f"<table style='width:100%;border-collapse:collapse;font-size:13.5px;'>{ref_rows}</table>"
+                f"</div></details>"
+            )
+
+            answer = intro + card
+            self.memory.add(question, answer)
+            return answer
+
         # ── ITEM PLACEMENT AUDIT ────────────────────────────────
 
         if operation == "item_placement_audit":
@@ -614,18 +741,24 @@ class ChatbotAgent:
 
             # Decision (plain text)
             decision_html = f"{verdict_badge}<br><br>{pretty_decision}"
-            if suggested_section and not correct:
+            if not correct:
                 if user_asked_wrong_section:
                     decision_html += (
                         f"<br><br>The item is correctly placed in "
                         f"<b>{pretty_section(actual_section)}</b> — "
                         f"{pretty_section(claimed_section)} is not the right section for this item."
                     )
-                else:
+                elif suggested_section:
                     decision_html += (
                         f"<br><br>It should be placed in "
                         f"<b>{pretty_section(suggested_section)}</b>. "
                         f"{suggested_reason or ''}"
+                    )
+                else:
+                    # Genuinely misplaced but belongs nowhere — should be Unselected
+                    decision_html += (
+                        f"<br><br>This item does not qualify for any section under the current briefing rules "
+                        f"and should be <b>Unselected</b>."
                     )
 
             # Shared card row helper
@@ -647,7 +780,9 @@ class ChatbotAgent:
                 + audit_row("Guideline Applied", guideline_used or "N/A")
             )
             if suggested_section:
-                details_rows += audit_row("Suggested Section", pretty_section(suggested_section))
+                details_rows += audit_row("Should Be In", f"<b>{pretty_section(suggested_section)}</b>")
+            elif not correct and not user_asked_wrong_section:
+                details_rows += audit_row("Should Be In", "<b>Unselected</b>")
 
             details_card = (
                 f"<br><br>"
@@ -660,11 +795,31 @@ class ChatbotAgent:
 
             # Refinement card — always shown
             if refinement_needed and refined_rule:
+                # Convert markdown to HTML for proper rendering
+                def md_to_html(text):
+                    import re as _re
+                    # **bold**
+                    text = _re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+                    # Lines starting with - → bullet
+                    lines = text.split("\n")
+                    out = []
+                    for line in lines:
+                        stripped = line.strip()
+                        if stripped.startswith("- "):
+                            out.append(f"<div style='display:flex;gap:8px;margin:2px 0;padding-left:8px;'><span style='color:#6366f1;flex-shrink:0;'>•</span><span>{stripped[2:]}</span></div>")
+                        elif stripped.startswith("### "):
+                            out.append(f"<div style='color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;margin-top:10px;margin-bottom:4px;'>{stripped[4:]}</div>")
+                        elif stripped == "":
+                            out.append("<div style='height:6px;'></div>")
+                        else:
+                            out.append(f"<div style='margin:3px 0;'>{stripped}</div>")
+                    return "".join(out)
+
+                refined_html = md_to_html(refined_rule)
                 ref_rows = (
                     audit_row("Section", pretty_section(refined_section or ""))
-                    + audit_row("Status", "Refinement Suggested")
-                    + audit_row("Refined Rule",
-                                f"<pre style='white-space:pre-wrap;font-family:inherit;margin:0;color:#c8c8c8;'>{refined_rule}</pre>")
+                    + audit_row("Status", "<span style='color:#f59e0b;font-weight:600;'>Refinement Suggested</span>")
+                    + audit_row("Refined Rule", f"<div style='line-height:1.7;'>{refined_html}</div>")
                 )
                 ref_content = (
                     f"<table style='width:100%;border-collapse:collapse;font-size:13.5px;'>{ref_rows}</table>"
@@ -824,4 +979,4 @@ class ChatbotAgent:
 
         answer = str(result)
         self.memory.add(question, answer)
-        return answer
+        return answer   
