@@ -657,12 +657,17 @@ class ChatbotAgent:
                 f"the section guideline would need the following changes:"
             )
 
-            refined_html = md_to_html(refined)
+            refined_html  = md_to_html(refined)
+            original_rule = self.dataset_manager.section_prompts.get(target_section, "")
+            original_html = md_to_html(original_rule) if original_rule else "<span style='color:#6b7280;'>Not available</span>"
 
             ref_rows = (
                 f"<tr style='border-bottom:1px solid rgba(255,255,255,0.06);'>"
                 f"<td style='padding:8px 16px;color:#f0f0f0;font-weight:600;white-space:nowrap;vertical-align:top;'>Section</td>"
                 f"<td style='padding:8px 16px;color:#c8c8c8;'>{pretty_section(target_section)}</td></tr>"
+                f"<tr style='border-bottom:1px solid rgba(255,255,255,0.06);'>"
+                f"<td style='padding:8px 16px;color:#f0f0f0;font-weight:600;vertical-align:top;'>Current Guideline</td>"
+                f"<td style='padding:8px 16px;color:#6b7280;'><div style='line-height:1.7;'>{original_html}</div></td></tr>"
                 f"<tr><td style='padding:8px 16px;color:#f0f0f0;font-weight:600;vertical-align:top;'>Revised Guideline</td>"
                 f"<td style='padding:8px 16px;color:#c8c8c8;'><div style='line-height:1.7;'>{refined_html}</div></td></tr>"
             )
@@ -816,9 +821,17 @@ class ChatbotAgent:
                     return "".join(out)
 
                 refined_html = md_to_html(refined_rule)
+
+                # Get original guideline for the section being refined
+                original_rule = self.dataset_manager.section_prompts.get(
+                    refined_section or "", ""
+                )
+                original_html = md_to_html(original_rule) if original_rule else "<span style='color:#6b7280;'>Not available</span>"
+
                 ref_rows = (
                     audit_row("Section", pretty_section(refined_section or ""))
                     + audit_row("Status", "<span style='color:#f59e0b;font-weight:600;'>Refinement Suggested</span>")
+                    + audit_row("Current Guideline", f"<div style='line-height:1.7;color:#6b7280;'>{original_html}</div>")
                     + audit_row("Refined Rule", f"<div style='line-height:1.7;'>{refined_html}</div>")
                 )
                 ref_content = (
@@ -979,4 +992,4 @@ class ChatbotAgent:
 
         answer = str(result)
         self.memory.add(question, answer)
-        return answer   
+        return answer
