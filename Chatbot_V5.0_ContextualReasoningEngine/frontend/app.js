@@ -357,10 +357,81 @@ function loadChat(index) {
 
 
 /* =========================
-   SEARCH
+   SEARCH MODAL
 ========================= */
 function searchChats() {
-  alert("Search coming soon 🚀");
+  const modal = document.getElementById("searchModal");
+  modal.classList.remove("hidden");
+  const input = document.getElementById("searchInput");
+  input.value = "";
+  filterChats("");
+  setTimeout(() => input.focus(), 50);
+}
+
+function closeSearch() {
+  document.getElementById("searchModal").classList.add("hidden");
+}
+
+function closeSearchOnBackdrop(e) {
+  if (e.target.id === "searchModal") closeSearch();
+}
+
+function handleSearchKey(e) {
+  if (e.key === "Escape") closeSearch();
+}
+
+function filterChats(query) {
+  const container = document.getElementById("searchResults");
+  container.innerHTML = "";
+  const q = query.trim().toLowerCase();
+
+  // "New chat" action always at top
+  const newChatRow = document.createElement("div");
+  newChatRow.className = "search-result-action";
+  newChatRow.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    <span>New chat</span>`;
+  newChatRow.onclick = () => { closeSearch(); newChat(); };
+  container.appendChild(newChatRow);
+
+  // Build searchable list: match against any message text in each chat
+  const matches = [];
+  chats.forEach((chat, index) => {
+    const firstUser = chat.find(m => m.type === "user");
+    const title = firstUser ? firstUser.text : "New Chat";
+
+    // Search across all message text in the chat
+    const haystack = chat.map(m => m.text).join(" ").toLowerCase();
+    if (q === "" || haystack.includes(q) || title.toLowerCase().includes(q)) {
+      matches.push({ index, title });
+    }
+  });
+
+  if (matches.length > 0) {
+    const label = document.createElement("div");
+    label.className = "search-section-label";
+    label.textContent = q === "" ? "Recent chats" : `${matches.length} result${matches.length !== 1 ? "s" : ""}`;
+    container.appendChild(label);
+  } else if (q !== "") {
+    const empty = document.createElement("div");
+    empty.className = "search-empty";
+    empty.textContent = "No chats found.";
+    container.appendChild(empty);
+  }
+
+  matches.forEach(({ index, title }) => {
+    const row = document.createElement("div");
+    row.className = "search-result-item";
+    row.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span>${title.slice(0, 48)}${title.length > 48 ? "…" : ""}</span>`;
+    row.onclick = () => { closeSearch(); loadChat(index); };
+    container.appendChild(row);
+  });
 }
 
 
