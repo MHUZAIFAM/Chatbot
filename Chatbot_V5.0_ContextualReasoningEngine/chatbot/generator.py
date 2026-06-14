@@ -424,3 +424,131 @@ Sibling sections:
 Output the revised guideline only.
 """
         return self._run(prompt).strip()
+
+
+    # =====================================================
+    # GENERAL FREE-ANSWER QUERY (forward path)
+    # =====================================================
+
+    def answer_general_query(self, question, item_record, memory=""):
+        """
+        Hands the AI the full record for an item and lets it answer
+        the user's question freely, grounded only in that data.
+        """
+
+        # Truncate the largest fields to keep prompt manageable
+        record_lines = []
+        for key, val in item_record.items():
+            if key in ("Full Text",):
+                val = val[:2000]
+            record_lines.append(f"{key}: {val}")
+
+        record_text = "\n".join(record_lines)
+
+        prompt = f"""
+You are a media briefing data assistant. Answer the user's question using ONLY the item record provided below. Do not invent information that is not present.
+
+ITEM RECORD:
+{record_text}
+
+CONVERSATION CONTEXT:
+{memory}
+
+USER QUESTION:
+{question}
+
+Instructions:
+- Answer naturally and concisely using only the data above.
+- If the answer is a specific field, state it clearly.
+- If the data does not contain the answer, say so plainly.
+- Do not show raw column names like "Sub_Cluster_ID" — use readable language.
+- Do not repeat the entire record back; answer the specific question.
+- Do not use markdown formatting like ** or *. Write in plain text.
+
+Answer:
+"""
+        return self._run(prompt).strip()
+
+
+    # =====================================================
+    # REVERSE LOOKUP — COLUMN PICKER
+    # =====================================================
+
+    def pick_search_columns(self, question, available_columns):
+        """
+        Given a reverse-lookup question, decide which column to search,
+        what value to match, the match type, and which columns to return.
+        Returns a dict.
+        """
+
+        cols_text = ", ".join(available_columns)
+
+        prompt = f"""
+You are a query planner for a news dataset. The user wants to FIND items matching some criteria (a reverse lookup across all rows).
+
+AVAILABLE COLUMNS:
+{cols_text}
+
+USER QUESTION:
+{question}
+
+Determine:
+1. filter_column — which column to search in
+2. filter_value — the value/text to look for. IMPORTANT: if the user pasted a long headline or text, extract only a SHORT distinctive snippet (5-10 words) that will reliably match as a substring. Do not use the entire pasted text — whitespace and truncation differences will cause matches to fail. Pick the most distinctive opening phrase.
+3. match_type — "contains" (substring search, best for headlines/text/outlets), "exact" (whole-field match), or "equals" (exact numeric/string)
+4. return_columns — list of columns worth showing for each match (always useful: Item ID, Headline, plus whatever the question is about)
+
+Examples:
+- "what items share the headline X" → filter_column: "Headline", filter_value: "X", match_type: "contains"
+- "items with headline News in the Middle East is a big issue, especially..." → filter_column: "Headline", filter_value: "News in the Middle East is a big issue", match_type: "contains"
+- "show me all items from Herald Sun" → filter_column: "Media Outlet", filter_value: "Herald Sun", match_type: "contains"
+- "what items mention Operation Nexus" → filter_column: "Full Text", filter_value: "Operation Nexus", match_type: "contains"
+- "which items are in cluster X" → filter_column: "Sub_Cluster_Title", filter_value: "X", match_type: "contains"
+
+Return ONLY valid JSON:
+{{
+  "filter_column": "",
+  "filter_value": "",
+  "match_type": "contains",
+  "return_columns": ["Item ID", "Headline"]
+}}
+
+No markdown, no preamble.
+"""
+        text = self._run(prompt).strip()
+        if text.startswith("```"):
+            text = text.replace("```json", "").replace("```", "").strip()
+        try:
+            return json.loads(text)
+        except Exception:
+            return None
+
+    # =====================================================
+    # REVERSE LOOKUP — ANSWER FROM MATCHES
+    # =====================================================
+
+    def answer_reverse_query(self, question, matches, total_found, memory=""):
+        """
+        Given the matching rows from a reverse lookup, answer the question.
+        """
+        matches_text = json.dumps(matches, indent=2)
+
+        prompt = f"""
+You are a media briefing data assistant. The user asked a question that required searching across all items. Below are the matching items found.
+
+MATCHING ITEMS ({total_found} total found):
+{matches_text}
+
+USER QUESTION:
+{question}
+
+Instructions:
+- Answer using only the matched items above.
+- List the relevant items clearly (Item ID and Headline at minimum).
+- If many items matched, summarise sensibly.
+- If no items matched, say so plainly.
+- Do not show raw column names — use readable language.
+
+Answer:
+"""
+        return self._run(prompt).strip()

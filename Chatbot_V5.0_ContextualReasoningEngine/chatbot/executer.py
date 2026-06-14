@@ -64,6 +64,9 @@ class Executor:
         if op == "hypothetical_placement":
             return self.qe.item_placement_audit(item_id)
 
+        if op == "general_query":
+            return self.qe.get_full_item_record(item_id)
+
         if op == "other_section_reasons":
             return self.qe.other_section_reasons(
                 item_id,

@@ -715,3 +715,70 @@ class QueryEngine:
         }
 
         return context
+
+    def get_full_item_record(self, item_id):
+        """
+        Returns ALL columns for a given item as a clean dict,
+        for the general_query free-answer path. Skips empty/nan values.
+        """
+        row = self.df[self.df[self.id_col].astype(str) == str(item_id)]
+        if row.empty:
+            return None
+
+        row = row.iloc[0]
+        record = {}
+        for col in self.df.columns:
+            val = row[col]
+            sval = str(val).strip()
+            if sval and sval.lower() != "nan":
+                record[col] = sval
+        return record
+
+    def search_items(self, filter_column, filter_value, match_type="contains", return_columns=None, limit=25):
+        """
+        Reverse lookup: find items where filter_column matches filter_value.
+
+        match_type: "contains" (substring, case-insensitive),
+                    "exact" (exact match, case-insensitive),
+                    "equals" (numeric/exact string equality)
+        return_columns: list of columns to include per match (defaults to ID + Headline + filter_column)
+        Returns list of dicts.
+        """
+        if filter_column not in self.df.columns:
+            return {"error": f"Column '{filter_column}' not found", "matches": []}
+
+        import re as _re
+        def _norm(s):
+            # Collapse all whitespace (newlines, tabs, multiple spaces) to single space
+            return _re.sub(r'\s+', ' ', str(s)).strip().lower()
+
+        col_series = self.df[filter_column].astype(str).apply(_norm)
+        fval = _norm(filter_value)
+
+        if match_type == "contains":
+            mask = col_series.str.contains(_re.escape(fval), na=False, regex=True)
+        elif match_type == "exact":
+            mask = col_series == fval
+        else:  # equals
+            mask = self.df[filter_column].astype(str).str.strip() == str(filter_value).strip()
+
+        matched = self.df[mask]
+
+        if return_columns is None:
+            return_columns = [self.id_col, "Headline", filter_column]
+
+        # Always include ID
+        if self.id_col not in return_columns:
+            return_columns = [self.id_col] + return_columns
+
+        results = []
+        for _, row in matched.head(limit).iterrows():
+            entry = {}
+            for col in return_columns:
+                if col in self.df.columns:
+                    val = str(row[col]).strip()
+                    if val and val.lower() != "nan":
+                        entry[col] = val[:300]  # cap field length
+            results.append(entry)
+
+        return {"error": None, "matches": results, "total_found": int(mask.sum())}

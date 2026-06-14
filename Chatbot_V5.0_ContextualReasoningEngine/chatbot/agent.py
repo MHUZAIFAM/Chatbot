@@ -167,6 +167,12 @@ class ChatbotAgent:
         operation = plan.get("operation")
         item_id   = plan.get("item_id")
 
+        # Fallback: if planner didn't extract an item_id but memory has a
+        # last_item, use it (handles follow-ups like "what cluster is it in?")
+        if not item_id and self.memory.last_item:
+            item_id = str(self.memory.last_item)
+            plan["item_id"] = item_id
+
         # ── HYPOTHETICAL PLACEMENT OVERRIDE ───────────────────
         # "if I were to place this in X, what changes are needed?"
         # User is asking what the guideline would need to say — always
@@ -301,6 +307,169 @@ class ChatbotAgent:
             self.memory.last_section = plan.get("section")
         if plan.get("operation"):
             self.memory.last_operation = plan.get("operation")
+
+        # ── REVERSE QUERY (cross-row search) ───────────────────
+        # "what items share X", "which items are in cluster Y",
+        # "show me all items from Z" → search across all rows.
+
+        _REVERSE_KW = [
+            "what items", "which items", "show me all", "find items",
+            "what articles", "which articles", "list items", "list all",
+            "items with", "items from", "items that", "items mentioning",
+            "articles from", "articles with", "articles mentioning",
+            "same headline", "share the headline", "same cluster",
+            "items share", "which ones",
+        ]
+        _is_reverse_q = any(kw in q_lower for kw in _REVERSE_KW)
+
+        if _is_reverse_q:
+            plan["operation"] = "reverse_query"
+            operation         = "reverse_query"
+
+        if operation == "reverse_query":
+            # Step 1: AI picks the column + value to search
+            searchable_cols = list(self.query_engine.df.columns)
+            pick = self.generator.pick_search_columns(question, searchable_cols)
+
+            if not pick or not pick.get("filter_column"):
+                answer = "Could not determine what to search for. Try rephrasing your question."
+                self.memory.add(question, answer)
+                return answer
+
+            # Step 2: Python does the deterministic search
+            search_result = self.query_engine.search_items(
+                filter_column=pick.get("filter_column"),
+                filter_value=pick.get("filter_value", ""),
+                match_type=pick.get("match_type", "contains"),
+                return_columns=pick.get("return_columns"),
+            )
+
+            if search_result.get("error"):
+                answer = f"Search error: {search_result['error']}"
+                self.memory.add(question, answer)
+                return answer
+
+            matches     = search_result.get("matches", [])
+            total_found = search_result.get("total_found", 0)
+
+            if not matches:
+                answer = (
+                    f"No items found matching "
+                    f"'{pick.get('filter_value')}' in {pretty_section(pick.get('filter_column',''))}."
+                )
+                self.memory.add(question, answer)
+                return answer
+
+            # Build a clean formatted result card
+            filter_col = pick.get("filter_column", "")
+            filter_val = pick.get("filter_value", "")
+
+            id_key = self.query_engine.id_col
+
+            def truncate(text, n=90):
+                text = str(text).replace("\n", " ").strip()
+                return text if len(text) <= n else text[:n].rstrip() + "…"
+
+            rows_html = ""
+            for idx, m in enumerate(matches):
+                iid      = m.get(id_key, "—")
+                headline = truncate(m.get("Headline", "—"), 90)
+                outlet   = m.get("Media Outlet", "")
+                date     = m.get("Date", "")
+                meta_bits = [b for b in [outlet, pretty_date(date) if date else ""] if b]
+                meta = " · ".join(meta_bits)
+
+                is_last = (idx == len(matches) - 1)
+                border  = "" if is_last else "border-bottom:1px solid rgba(255,255,255,0.06);"
+
+                rows_html += (
+                    f"<div style='padding:10px 0;{border}'>"
+                    f"<div style='color:#a5b4fc;font-weight:600;font-size:13.5px;'>{iid}</div>"
+                    f"<div style='color:#e8e8e8;margin:2px 0;'>{headline}</div>"
+                    + (f"<div style='color:#6b7280;font-size:12px;'>{meta}</div>" if meta else "")
+                    + f"</div>"
+                )
+
+            count_label = (
+                f"{total_found} item{'s' if total_found != 1 else ''} found"
+                + (f" (showing first {len(matches)})" if total_found > len(matches) else "")
+            )
+
+            intro = (
+                f"Searching <b>{pretty_section(filter_col)}</b> for "
+                f"\"<b>{truncate(filter_val, 60)}</b>\" — {count_label}:"
+            )
+
+            card = (
+                f"<br><br>"
+                f"<div style='border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:4px 16px 8px;'>"
+                f"{rows_html}"
+                f"</div>"
+            )
+
+            answer = intro + card
+            self.memory.add(question, answer)
+            return answer
+
+        # ── GENERAL FIELD LOOKUP → general_query ───────────────
+        # Questions about item fields we have no deterministic handler for
+        # (cluster, story, keywords, word count, page, outlet, date, etc.)
+        # go to the free-answer path so the AI can read the full record.
+
+        _GENERAL_FIELD_KW = [
+            "sub cluster", "subcluster", "sub-cluster", "cluster",
+            "story title", "story id", "story summary",
+            "keywords", "word count", "wordcount", "page number",
+            "weburl", "web url", "brief name", "brief id",
+            "auto summary", "what state", "which state", "country",
+            "air date", "airdate", "media item type",
+        ]
+        _is_general_field_q = (
+            item_id
+            and any(kw in q_lower for kw in _GENERAL_FIELD_KW)
+            and operation not in [
+                "item_placement_audit", "hypothetical_placement",
+                "item_type_reason", "reverse_query",
+            ]
+        )
+
+        if _is_general_field_q:
+            plan["operation"] = "general_query"
+            operation         = "general_query"
+
+        # ── GENERAL QUERY (free-answer fallback) ───────────────
+        # If the planner couldn't map to a precise operation but we have
+        # an item_id, hand the full record to the AI and let it answer.
+
+        if operation == "unknown" and item_id:
+            plan["operation"] = "general_query"
+            operation         = "general_query"
+
+        if operation == "general_query":
+            if not item_id:
+                answer = (
+                    "This chatbot focuses on article reasoning, "
+                    "ranking, placement, and filtering."
+                )
+                self.memory.add(question, answer)
+                return answer
+
+            record = self.query_engine.get_full_item_record(item_id)
+            if not record:
+                answer = f"Could not find item {item_id} in the dataset."
+                self.memory.add(question, answer)
+                return answer
+
+            answer = self.generator.answer_general_query(
+                question=question,
+                item_record=record,
+                memory=self.memory.summary(),
+            )
+            # Convert markdown bold/italic to HTML (app.js renders HTML)
+            answer = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', answer)
+            answer = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'<i>\1</i>', answer)
+            self.memory.add(question, answer)
+            return answer
 
         # ── UNSUPPORTED ────────────────────────────────────────
 
